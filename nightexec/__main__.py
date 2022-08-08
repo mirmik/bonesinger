@@ -4,7 +4,7 @@ from .telegram_notify import telegram_notify
 import argparse
 
 
-def do_step(task, functions):
+def do_step(task, functions, pipeline_name, telegram_onfailure):
     try:
         task.execute(pipeline_name, functions)
     except Exception as e:
@@ -42,12 +42,18 @@ def main():
     status = True
     if args.step == "":
         for task in tasks:
-            task_status, task_telegram_message = do_step(task, functions)
+            task_status, task_telegram_message = do_step(task,
+                                                         functions,
+                                                         pipeline_name,
+                                                         telegram_onfailure)
             if not task_status:
                 status = False
                 telegram_message = task_telegram_message
     else:
-        status, telegram_message = do_step(find_task(tasks, args.step), functions)
+        status, telegram_message = do_step(find_task(tasks, args.step),
+                                           functions,
+                                           pipeline_name,
+                                           telegram_onfailure)
 
     if status:
         telegram_message = telegram_onsuccess
