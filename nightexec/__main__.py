@@ -1,12 +1,24 @@
+import re
 from .parser import parse_yaml, make_tasks, make_functions
 from .telegram_notify import telegram_notify
 import argparse
+
+
+def do_step(task, functions):
+    try:
+        task.execute(pipeline_name, functions)
+    except Exception as e:
+        status = False
+        telegram_message = telegram_onfailure.format(task=task, error=e)
+        return False, telegram_message
+    return True, ""
 
 
 def main():
     parser = argparse.ArgumentParser(description='Nightexec')
     # add option script
     parser.add_argument('-s', '--script', help='script file', required=True)
+    parser.add_argument('-n', '--step', help='step name', default="", required=False)
     args = parser.parse_args()
 
     filepath = args.script
@@ -21,13 +33,14 @@ def main():
     telegram_onsuccess = dct["telegram"]["onsuccess"]
 
     status = True
-    for task in tasks:
-        try:
-            task.execute(pipeline_name, functions)
-        except Exception as e:
-            status = False
-            telegram_message = telegram_onfailure.format(task=task, error=e)
-            break
+    if args.step == "":
+        for task in tasks:
+            task_status, task_telegram_message = do_step(task, functions)
+            if not task_status:
+                status = False
+                telegram_message = task_telegram_message
+    else:
+        status, telegram_message = do_step(task, functions)
 
     if status:
         telegram_message = telegram_onsuccess
