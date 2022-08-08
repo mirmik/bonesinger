@@ -4,9 +4,9 @@ from .telegram_notify import telegram_notify
 import argparse
 
 
-def do_step(task, functions, pipeline_name, telegram_onfailure):
+def do_step(task, functions, pipeline_name, telegram_onfailure, script_executor):
     try:
-        task.execute(pipeline_name, functions)
+        task.execute(pipeline_name, functions, executor=script_executor)
     except Exception as e:
         status = False
         telegram_message = telegram_onfailure.format(task=task, error=e)
@@ -38,6 +38,7 @@ def main():
     telegram_chat_id = dct["telegram"]["chat_id"]
     telegram_onfailure = dct["telegram"]["onfailure"]
     telegram_onsuccess = dct["telegram"]["onsuccess"]
+    script_executor = dct["script_executor"]
 
     status = True
     if args.step == "":
@@ -45,7 +46,8 @@ def main():
             task_status, task_telegram_message = do_step(task,
                                                          functions,
                                                          pipeline_name,
-                                                         telegram_onfailure)
+                                                         telegram_onfailure,
+                                                         script_executor=script_executor)
             if not task_status:
                 status = False
                 telegram_message = task_telegram_message
@@ -53,7 +55,8 @@ def main():
         status, telegram_message = do_step(find_task(tasks, args.step),
                                            functions,
                                            pipeline_name,
-                                           telegram_onfailure)
+                                           telegram_onfailure,
+                                           script_executor=script_executor)
 
     if status:
         telegram_message = telegram_onsuccess
