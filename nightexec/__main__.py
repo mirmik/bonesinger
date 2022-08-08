@@ -4,9 +4,17 @@ from .telegram_notify import telegram_notify
 import argparse
 
 
-def do_step(task, functions, pipeline_name, telegram_onfailure, script_executor):
+def do_step(task,
+            functions,
+            pipeline_name,
+            telegram_onfailure,
+            script_executor,
+            matrix):
     try:
-        task.execute(pipeline_name, functions, script_executor=script_executor)
+        task.execute(pipeline_name,
+                     functions,
+                     script_executor=script_executor,
+                     matrix=matrix)
     except Exception as e:
         status = False
         telegram_message = telegram_onfailure.format(task=task, error=e)
@@ -19,6 +27,23 @@ def find_task(tasks, name):
         if task.name == name:
             return task
     raise Exception(f"Task {name} not found")
+
+
+def matrix_iterator(matrix):
+    def prod(lst):
+        res = 1
+        for x in lst:
+            res *= x
+        return res
+
+    keys = sorted(matrix.keys())
+    values_list = [matrix[key] for key in keys]
+    count_of_elements = prod([len(values) for values in values_list])
+    for i in range(count_of_elements):
+        matrix_value = {}
+        for j in range(len(keys)):
+            matrix_value[keys[j]] = values_list[j][i % len(values_list[j])]
+        yield matrix_value
 
 
 def main():
@@ -40,23 +65,28 @@ def main():
     telegram_onsuccess = dct["telegram"]["onsuccess"]
     script_executor = dct["script_executor"]
 
-    status = True
-    if args.step == "":
-        for task in tasks:
-            task_status, task_telegram_message = do_step(task,
-                                                         functions,
-                                                         pipeline_name,
-                                                         telegram_onfailure,
-                                                         script_executor=script_executor)
-            if not task_status:
-                status = False
-                telegram_message = task_telegram_message
-    else:
-        status, telegram_message = do_step(find_task(tasks, args.step),
-                                           functions,
-                                           pipeline_name,
-                                           telegram_onfailure,
-                                           script_executor=script_executor)
+    matrix = dct["matrix"]
+
+    for matrix_value in matrix_iterator(matrix):
+        status = True
+        if args.step == "":
+            for task in tasks:
+                task_status, task_telegram_message = do_step(task,
+                                                             functions,
+                                                             pipeline_name,
+                                                             telegram_onfailure,
+                                                             script_executor=script_executor,
+                                                             matrix=matrix_value)
+                if not task_status:
+                    status = False
+                    telegram_message = task_telegram_message
+        else:
+            status, telegram_message = do_step(find_task(tasks, args.step),
+                                               functions,
+                                               pipeline_name,
+                                               telegram_onfailure,
+                                               script_executor=script_executor,
+                                               matrix=matrix_value)
 
     if status:
         telegram_message = telegram_onsuccess

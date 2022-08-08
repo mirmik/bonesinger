@@ -6,6 +6,23 @@ import time
 import fcntl
 import os
 import sys
+import json
+
+# declaringa a class
+
+
+class obj:
+
+    # constructor
+    def __init__(self, dict1):
+        self.__dict__.update(dict1)
+
+
+def dict2obj(dict1):
+
+    # using json.loads method and passing json.dumps
+    # method and custom object hook as arguments
+    return json.loads(json.dumps(dict1), object_hook=obj)
 
 
 class Function:
@@ -29,8 +46,10 @@ class Task:
     def __str__(self):
         return f"Task({self.name})"
 
-    def execute(self, pipeline_name, functions, script_executor):
-        print(f"###PIPELINE: {pipeline_name} STEP: {self.name}")
+    def execute(self, pipeline_name, functions, script_executor, matrix):
+        print(f"###PIPELINE: {pipeline_name} STEP: {self.name} matrix: {matrix}")
+
+        matrix = dict2obj(matrix)
 
         # gererate random name for temporary file
         tmp_file = f"/tmp/{pipeline_name}_{self.name}_{time.time()}.tmp"
@@ -41,7 +60,10 @@ class Task:
             for function in functions:
                 f.write(function.compile_text())
                 f.write("\n")
-            f.write("\n".join(self.run_lines))
+            try:
+                f.write("\n".join(self.run_lines).format(matrix=matrix))
+            except Exception as e:
+                print(e)
 
         # run tmp/script.sh and listen stdout and stderr
         proc = subprocess.Popen([script_executor, tmp_file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
