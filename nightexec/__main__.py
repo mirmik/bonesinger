@@ -14,6 +14,13 @@ def do_step(task, functions):
     return True, ""
 
 
+def find_task(tasks, name):
+    for task in tasks:
+        if task.name == name:
+            return task
+    raise Exception(f"Task {name} not found")
+
+
 def main():
     parser = argparse.ArgumentParser(description='Nightexec')
     # add option script
@@ -40,7 +47,7 @@ def main():
                 status = False
                 telegram_message = task_telegram_message
     else:
-        status, telegram_message = do_step(task, functions)
+        status, telegram_message = do_step(find_task(tasks, args.step), functions)
 
     if status:
         telegram_message = telegram_onsuccess
