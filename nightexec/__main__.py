@@ -65,7 +65,10 @@ def main():
     telegram_onsuccess = dct["telegram"]["onsuccess"]
     script_executor = dct["script_executor"]
 
-    matrix = dct["matrix"]
+    if "matrix" in dct:
+        matrix = dct["matrix"]
+    else:
+        matrix = {}
 
     for matrix_value in matrix_iterator(matrix):
         status = True
