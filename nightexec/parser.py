@@ -29,14 +29,14 @@ class Task:
     def __str__(self):
         return f"Task({self.name})"
 
-    def execute(self, pipeline_name, functions):
+    def execute(self, pipeline_name, functions, script_executor):
         print(f"###PIPELINE: {pipeline_name} STEP: {self.name}")
 
         # gererate random name for temporary file
         tmp_file = f"/tmp/{pipeline_name}_{self.name}_{time.time()}.tmp"
 
         with open(tmp_file, "w") as f:
-            f.write("#!/bin/bash\n")
+            f.write("#!{script_executor}\n")
             f.write("set -ex\n")
             for function in functions:
                 f.write(function.compile_text())
@@ -44,7 +44,7 @@ class Task:
             f.write("\n".join(self.run_lines))
 
         # run tmp/script.sh and listen stdout and stderr
-        proc = subprocess.Popen(["/bin/bash", tmp_file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = subprocess.Popen([script_executor, tmp_file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         # set non-blocking output
         fcntl.fcntl(proc.stdout, fcntl.F_SETFL, fcntl.fcntl(proc.stdout, fcntl.F_GETFL) | os.O_NONBLOCK)
