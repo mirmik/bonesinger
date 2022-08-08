@@ -1,9 +1,16 @@
 from .parser import parse_yaml, make_tasks, make_functions
 from .telegram_notify import telegram_notify
+import argparse
 
 
 def main():
-    dct = parse_yaml("hello.yaml")
+    parser = argparse.ArgumentParser(description='Nightexec')
+    # add option script
+    parser.add_argument('-s', '--script', help='script file', required=True)
+    args = parser.parse_args()
+
+    filepath = args.script
+    dct = parse_yaml(filepath)
     pipeline_name = dct["pipeline_name"]
     tasks = make_tasks(dct["tasks"])
     functions = make_functions(dct["functions"])
