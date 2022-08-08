@@ -6,7 +6,7 @@ import argparse
 
 def do_step(task, functions, pipeline_name, telegram_onfailure, script_executor):
     try:
-        task.execute(pipeline_name, functions, executor=script_executor)
+        task.execute(pipeline_name, functions, script_executor=script_executor)
     except Exception as e:
         status = False
         telegram_message = telegram_onfailure.format(task=task, error=e)
