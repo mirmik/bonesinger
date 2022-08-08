@@ -10,10 +10,6 @@ import os
 
 directory = os.path.dirname(os.path.realpath(__file__))
 
-requires = [
-    "PyQt5!=5.14.1",
-]
-
 setup(
     name="nightexec",
     packages=["nightexec"],
@@ -28,7 +24,6 @@ setup(
     keywords=["testing", "cad"],
     classifiers=[],
     include_package_data=True,
-    install_requires=requires,
     entry_points={"console_scripts": [
         "nightexec=nightexec.__main__:main",
     ]},
