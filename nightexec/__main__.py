@@ -68,7 +68,7 @@ def main():
 
     executor = NativeExecutor(script_executor=script_executor)
     if "runs-on-docker" in dct:
-        executor = DockerExecutor(image=dct["runs-on-docker"],
+        executor = DockerExecutor(image=dct["runs-on-docker"]["image"],
                                   script_executor=script_executor)
 
     if "matrix" in dct:
