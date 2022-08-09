@@ -23,14 +23,17 @@ class NativeExecutor:
 
 
 class DockerExecutor:
-    def __init__(self, image, script_executor):
+    def __init__(self, image, script_executor, addfiles):
         self.image = image
         self.container_name = None
-        self.init_executor(script_executor)
+        self.init_executor(script_executor, addfiles)
 
-    def init_executor(self, script_executor):
+    def init_executor(self, script_executor, addfiles):
         self.script_executor = script_executor
         self.container_name = start_docker_container(self.image, script_executor)
+
+        for addfile in addfiles:
+            upload_file_to_docker_container(self.container_name, addfile["src"], addfile["dst"])
 
     def run_script_cmd(self, file_path):
         cmd = f"docker exec {self.container_name} {self.script_executor} {file_path}"
