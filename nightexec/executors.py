@@ -23,26 +23,13 @@ class NativeExecutor:
 
 
 class DockerExecutor:
-    def __init__(self, image_script, script_executor):
-        self.image_script = image_script
+    def __init__(self, image, script_executor):
+        self.image = image
         self.container_name = None
         self.init_executor(script_executor)
 
     def init_executor(self, script_executor):
         self.script_executor = script_executor
-
-        # create temporary docker file
-        tmp_docker_file = f"/tmp/{time.time()}.docker.tmp"
-        with open(tmp_docker_file, "w") as f:
-            f.write(self.image_script)
-
-        # generate random image name
-        self.image = f"image-{time.time()}"
-
-        # build docker image
-        cmd = f"docker build . -t {self.image} -f {tmp_docker_file}"
-        subprocess.run(cmd, shell=True)
-
         self.container_name = start_docker_container(self.image, script_executor)
 
     def run_script_cmd(self, file_path):
