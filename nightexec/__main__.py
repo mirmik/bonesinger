@@ -51,14 +51,19 @@ def main():
     parser = argparse.ArgumentParser(description='Nightexec')
     # add option script
     parser.add_argument('-s', '--script', help='script file', required=True)
-    parser.add_argument('-n', '--step', help='step name', default="", required=False)
+    parser.add_argument('-n', '--step', help='step name',
+                        default="", required=False)
     args = parser.parse_args()
 
     filepath = args.script
     dct = parse_yaml(filepath)
     pipeline_name = dct["pipeline_name"]
     tasks = make_tasks(dct["tasks"])
-    functions = make_functions(dct["functions"])
+
+    if "functions" in dct:
+        functions = make_functions(dct["functions"])
+    else:
+        functions = {}
 
     telegram_token = dct["telegram"]["token"]
     telegram_chat_id = dct["telegram"]["chat_id"]
@@ -87,7 +92,8 @@ def main():
                                                    executor=executor,
                                                    matrix=matrix_value)
                 if not status:
-                    telegram_notify(telegram_token, telegram_chat_id, telegram_message)
+                    telegram_notify(
+                        telegram_token, telegram_chat_id, telegram_message)
                     return
         else:
             status, telegram_message = do_step(find_task(tasks, args.step),
@@ -98,7 +104,8 @@ def main():
                                                matrix=matrix_value)
 
             if not status:
-                telegram_notify(telegram_token, telegram_chat_id, telegram_message)
+                telegram_notify(
+                    telegram_token, telegram_chat_id, telegram_message)
                 return
 
     telegram_notify(
