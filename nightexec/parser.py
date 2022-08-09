@@ -46,7 +46,7 @@ class Task:
     def __str__(self):
         return f"Task({self.name})"
 
-    def execute(self, pipeline_name, functions, script_executor, matrix):
+    def execute(self, pipeline_name, functions, executor, matrix):
         print(f"###PIPELINE: {pipeline_name} STEP: {self.name} matrix: {matrix}")
 
         matrix = dict2obj(matrix)
@@ -65,8 +65,11 @@ class Task:
             except Exception as e:
                 print(e)
 
+        executor.upload_temporary_file(tmp_file)
+
         # run tmp/script.sh and listen stdout and stderr
-        proc = subprocess.Popen([script_executor, tmp_file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = subprocess.Popen(executor.run_script_cmd(tmp_file), shell=True,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         # set non-blocking output
         fcntl.fcntl(proc.stdout, fcntl.F_SETFL, fcntl.fcntl(proc.stdout, fcntl.F_GETFL) | os.O_NONBLOCK)

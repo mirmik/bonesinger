@@ -1,6 +1,7 @@
 import re
 from .parser import parse_yaml, make_tasks, make_functions
 from .telegram_notify import telegram_notify
+from .executors import NativeExecutor, DockerExecutor
 import argparse
 
 
@@ -8,12 +9,12 @@ def do_step(task,
             functions,
             pipeline_name,
             telegram_onfailure,
-            script_executor,
+            executor,
             matrix):
     try:
         task.execute(pipeline_name,
                      functions,
-                     script_executor=script_executor,
+                     executor=executor,
                      matrix=matrix)
     except Exception as e:
         status = False
@@ -65,36 +66,41 @@ def main():
     telegram_onsuccess = dct["telegram"]["onsuccess"]
     script_executor = dct["script_executor"]
 
+    executor = NativeExecutor(script_executor=script_executor)
+    if "runs-on-docker" in dct:
+        executor = DockerExecutor(image=dct["runs-on-docker"],
+                                  script_executor=script_executor)
+
     if "matrix" in dct:
         matrix = dct["matrix"]
     else:
         matrix = {}
 
     for matrix_value in matrix_iterator(matrix):
-        status = True
         if args.step == "":
             for task in tasks:
-                task_status, task_telegram_message = do_step(task,
-                                                             functions,
-                                                             pipeline_name,
-                                                             telegram_onfailure,
-                                                             script_executor=script_executor,
-                                                             matrix=matrix_value)
-                if not task_status:
-                    status = False
-                    telegram_message = task_telegram_message
+                status, telegram_message = do_step(task,
+                                                   functions,
+                                                   pipeline_name,
+                                                   telegram_onfailure,
+                                                   executor=executor,
+                                                   matrix=matrix_value)
+                if not status:
+                    telegram_notify(telegram_token, telegram_chat_id, telegram_message)
+                    return
         else:
             status, telegram_message = do_step(find_task(tasks, args.step),
                                                functions,
                                                pipeline_name,
                                                telegram_onfailure,
-                                               script_executor=script_executor,
+                                               executor=executor,
                                                matrix=matrix_value)
 
-    if status:
-        telegram_message = telegram_onsuccess
+            if not status:
+                telegram_notify(telegram_token, telegram_chat_id, telegram_message)
+                return
 
     telegram_notify(
         token=telegram_token,
         chat_id=telegram_chat_id,
-        text=telegram_message)
+        text=telegram_onsuccess)
