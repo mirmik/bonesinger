@@ -4,7 +4,6 @@ from .telegram_notify import telegram_notify
 from .executors import NativeExecutor, DockerExecutor
 import argparse
 
-
 def do_step(task,
             functions,
             pipeline_name,
@@ -55,6 +54,8 @@ def main():
                         default="", required=False)
     args = parser.parse_args()
 
+    print("Start script:", args.script)
+
     filepath = args.script
     dct = parse_yaml(filepath)
     pipeline_name = dct["pipeline_name"]
@@ -65,11 +66,17 @@ def main():
     else:
         functions = {}
 
-    telegram_token = dct["telegram"]["token"]
-    telegram_chat_id = dct["telegram"]["chat_id"]
-    telegram_onfailure = dct["telegram"]["onfailure"]
-    telegram_onsuccess = dct["telegram"]["onsuccess"]
-    script_executor = dct["script_executor"]
+    if "telegram" in dct:
+        telegram_token = dct["telegram"]["token"]
+        telegram_chat_id = dct["telegram"]["chat_id"]
+        telegram_onfailure = dct["telegram"]["onfailure"]
+        telegram_onsuccess = dct["telegram"]["onsuccess"]
+    else:
+        telegram_onfailure = "undefined"
+    if "script_executor" in dct:
+        script_executor = dct["script_executor"]
+    else:
+        script_executor = "/bin/bash"
 
     executor = NativeExecutor(script_executor=script_executor)
     if "runs-on-docker" in dct:
@@ -92,8 +99,9 @@ def main():
                                                    executor=executor,
                                                    matrix=matrix_value)
                 if not status:
-                    telegram_notify(
-                        telegram_token, telegram_chat_id, telegram_message)
+                    if "telegram" in dct:
+                        telegram_notify(
+                            telegram_token, telegram_chat_id, telegram_message)
                     return
         else:
             status, telegram_message = do_step(find_task(tasks, args.step),
@@ -104,11 +112,17 @@ def main():
                                                matrix=matrix_value)
 
             if not status:
-                telegram_notify(
-                    telegram_token, telegram_chat_id, telegram_message)
+                if "telegram" in dct:
+                    telegram_notify(
+                        telegram_token, telegram_chat_id, telegram_message)
                 return
 
-    telegram_notify(
-        token=telegram_token,
-        chat_id=telegram_chat_id,
-        text=telegram_onsuccess)
+    if "telegram" in dct:
+        telegram_notify(
+            token=telegram_token,
+            chat_id=telegram_chat_id,
+            text=telegram_onsuccess)
+
+
+if __name__ == "__main__":
+    main()

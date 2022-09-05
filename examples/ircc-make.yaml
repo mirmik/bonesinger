@@ -1,21 +1,22 @@
-pipeline_name: ircc-make
+pipeline_name: igris-make
 
 tasks:
   - name: clone
     run: |
-      git clone https://github.com/mirmik/ircc
+      rm -rf /tmp/igris
+      git clone https://github.com/mirmik/igris /tmp/igris
 
   - name: cmake
     run: |
-      cd ircc
+      cd /tmp/igris
       cmake .
 
   - name: cmake-build
     run: |
-      cd ircc
+      cd /tmp/igris
       cmake --build .
 
   - name: cmake-tests
     run: |
-      cd ircc
-      ./runtests
+      cd /tmp/igris
+      cmake --test .
