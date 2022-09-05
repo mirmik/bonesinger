@@ -3,18 +3,27 @@ from .parser import parse_yaml, make_tasks, make_functions
 from .telegram_notify import telegram_notify
 from .executors import NativeExecutor, DockerExecutor
 import argparse
+import threading
+import os
+import signal
+import sys
+
+CANCEL_TOKEN = False
+
 
 def do_step(task,
             functions,
             pipeline_name,
             telegram_onfailure,
             executor,
-            matrix):
+            matrix,
+            prefix):
     try:
         task.execute(pipeline_name,
                      functions,
                      executor=executor,
-                     matrix=matrix)
+                     matrix=matrix,
+                     prefix=prefix)
     except Exception as e:
         status = False
         telegram_message = telegram_onfailure.format(task=task, error=e)
@@ -46,10 +55,39 @@ def matrix_iterator(matrix):
         yield matrix_value
 
 
+def start_watchdog(time_in_seconds):
+    def run_watchdog(pid):
+        import time
+        import os
+        import signal
+
+        start_time = time.time()
+        while True:
+            if CANCEL_TOKEN:
+                return
+            if time.time() - start_time > time_in_seconds:
+                os.kill(pid, signal.SIGKILL)
+                break
+            time.sleep(1)
+
+        print(
+            "**********************\nScript finished by Watchdog.\n**********************")
+        os.kill(pid, signal.SIGKILL)
+
+    pid = os.getpid()
+    t = threading.Thread(target=run_watchdog, args=(pid,))
+    t.start()
+
+
+def set_cancel_token():
+    global CANCEL_TOKEN
+    CANCEL_TOKEN = True
+
+
 def main():
     parser = argparse.ArgumentParser(description='Nightexec')
     # add option script
-    parser.add_argument('-s', '--script', help='script file', required=True)
+    parser.add_argument('script', help='script file')
     parser.add_argument('-n', '--step', help='step name',
                         default="", required=False)
     args = parser.parse_args()
@@ -60,6 +98,9 @@ def main():
     dct = parse_yaml(filepath)
     pipeline_name = dct["pipeline_name"]
     tasks = make_tasks(dct["tasks"])
+
+    if "watchdog" in dct:
+        start_watchdog(dct["watchdog"])
 
     if "functions" in dct:
         functions = make_functions(dct["functions"])
@@ -89,6 +130,11 @@ def main():
     else:
         matrix = {}
 
+    if "prefix" in dct:
+        prefix = dct["prefix"]
+    else:
+        prefix = ""
+
     for matrix_value in matrix_iterator(matrix):
         if args.step == "":
             for task in tasks:
@@ -97,11 +143,13 @@ def main():
                                                    pipeline_name,
                                                    telegram_onfailure,
                                                    executor=executor,
-                                                   matrix=matrix_value)
+                                                   matrix=matrix_value,
+                                                   prefix=prefix)
                 if not status:
                     if "telegram" in dct:
                         telegram_notify(
                             telegram_token, telegram_chat_id, telegram_message)
+                    set_cancel_token()
                     return
         else:
             status, telegram_message = do_step(find_task(tasks, args.step),
@@ -109,12 +157,14 @@ def main():
                                                pipeline_name,
                                                telegram_onfailure,
                                                executor=executor,
-                                               matrix=matrix_value)
+                                               matrix=matrix_value,
+                                               prefix=prefix)
 
             if not status:
                 if "telegram" in dct:
                     telegram_notify(
                         telegram_token, telegram_chat_id, telegram_message)
+                set_cancel_token()
                 return
 
     if "telegram" in dct:
@@ -122,6 +172,8 @@ def main():
             token=telegram_token,
             chat_id=telegram_chat_id,
             text=telegram_onsuccess)
+
+    set_cancel_token()
 
 
 if __name__ == "__main__":

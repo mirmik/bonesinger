@@ -46,8 +46,9 @@ class Task:
     def __str__(self):
         return f"Task({self.name})"
 
-    def execute(self, pipeline_name, functions, executor, matrix):
-        print(f"###PIPELINE: {pipeline_name} STEP: {self.name} matrix: {matrix}")
+    def execute(self, pipeline_name, functions, executor, matrix, prefix):
+        print(
+            f"###PIPELINE: {pipeline_name} STEP: {self.name} matrix: {matrix}")
 
         matrix = dict2obj(matrix)
 
@@ -57,6 +58,7 @@ class Task:
         with open(tmp_file, "w") as f:
             f.write("#!{script_executor}\n")
             f.write("set -ex\n")
+            f.write(prefix)
             for function in functions:
                 f.write(function.compile_text())
                 f.write("\n")
@@ -72,8 +74,10 @@ class Task:
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         # set non-blocking output
-        fcntl.fcntl(proc.stdout, fcntl.F_SETFL, fcntl.fcntl(proc.stdout, fcntl.F_GETFL) | os.O_NONBLOCK)
-        fcntl.fcntl(proc.stderr, fcntl.F_SETFL, fcntl.fcntl(proc.stderr, fcntl.F_GETFL) | os.O_NONBLOCK)
+        fcntl.fcntl(proc.stdout, fcntl.F_SETFL, fcntl.fcntl(
+            proc.stdout, fcntl.F_GETFL) | os.O_NONBLOCK)
+        fcntl.fcntl(proc.stderr, fcntl.F_SETFL, fcntl.fcntl(
+            proc.stderr, fcntl.F_GETFL) | os.O_NONBLOCK)
 
         while True:
             # read stdout
@@ -132,3 +136,7 @@ def make_functions(yaml_data):
     for function in yaml_data:
         functions.append(Function(function["name"], function["run"]))
     return functions
+
+
+def make_prefix(yaml_data):
+    return yaml_data
