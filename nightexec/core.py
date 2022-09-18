@@ -43,6 +43,8 @@ class Core:
     def make_task_list(self, records) -> list:
         """make list of Step objects from records"""
         tasks = []
+        if records is None:
+            return tasks
         for record in records:
             name = record["name"]
             run = record["run"]

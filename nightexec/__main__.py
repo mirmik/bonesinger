@@ -23,8 +23,8 @@ def do_step(pipeline_name,
     except Exception as e:
         print(f"Step {task.name} failed: {e}")
         return False
-        #status = False
-        #telegram_message = telegram_onfailure.format(task=task, error=e)
+        # status = False
+        # telegram_message = telegram_onfailure.format(task=task, error=e)
         # return False, telegram_message
     return True, ""
 
@@ -78,6 +78,7 @@ def main():
     parser.add_argument('scripts', nargs='*', type=str, help='Path to script')
     parser.add_argument('--entrance', type=str, help='Pipeline to execute')
     parser.add_argument('--debug', action='store_true', help='Debug mode')
+    parser.add_argument('--docker', type=str, help='Docker image to use', default=None)
     parser.add_argument('-n', '--step', help='step name',
                         default="", required=False)
     args = parser.parse_args()
@@ -98,10 +99,9 @@ def main():
         script_executor = "/bin/bash"
 
     executor = NativeExecutor(script_executor=script_executor)
-    if "runs-on-docker" in dct:
-        executor = DockerExecutor(image=dct["runs-on-docker"]["image"],
-                                  script_executor=script_executor,
-                                  addfiles=dct["runs-on-docker"]["add"])
+    if args.docker is not None:
+        executor = DockerExecutor(image=args.docker,
+                                  script_executor=script_executor)
 
     if "matrix" in dct:
         matrix = dct["matrix"]
@@ -127,7 +127,12 @@ def main():
                 on_failure_records=dct.get("on_failure", None),
                 pipeline_template=pipeline_template)
 
-    core.execute_entrypoint(args.entrance)
+    if args.entrance is not None:
+        core.execute_entrypoint(args.entrance)
+    elif len(dct["pipeline"]) == 1:
+        core.execute_entrypoint(dct["pipeline"][0]["name"])
+    else:
+        print("Entrance is not specified. Use --entrance to specify it.")
 
 
 if __name__ == "__main__":

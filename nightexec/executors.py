@@ -35,7 +35,7 @@ class NativeExecutor(StepExecutor):
 
 
 class DockerExecutor(StepExecutor):
-    def __init__(self, image, script_executor, addfiles):
+    def __init__(self, image, script_executor, addfiles=[]):
         self.image = image
         self.container_name = None
         self.init_executor(script_executor, addfiles)
