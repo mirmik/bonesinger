@@ -1,0 +1,17 @@
+prefix:
+  - |
+    function telegram_notify() {
+      token=`cat ~/.atomtoken`
+      chatid=`cat ~/.atomchat`
+      telenot --token ${token} --chatid ${chatid} --text "$1"
+    }
+
+on_failure:
+  - name: "telegram_report"
+    run: |
+      telegram_notify "Fault {error_message}"
+
+on_success:
+  - name: "telegram_report"
+    run: |
+      telegram_notify "Success {pipeline_name}"

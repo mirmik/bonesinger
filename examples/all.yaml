@@ -1,0 +1,20 @@
+pipeline:
+  - name: all
+    steps:
+      - name: igris
+        run_pipeline: igris
+
+      - name: nos
+        run_pipeline: nos
+
+      - name: crow
+        run_pipeline: crow
+
+      - name: ralgo
+        run_pipeline: ralgo
+
+      - name: rabbit
+        run_pipeline: rabbit
+
+      - name: ircc
+        run_pipeline: ircc

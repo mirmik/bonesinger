@@ -1,0 +1,49 @@
+pipeline_template:
+  - name: netricks_library
+    watchdog: 600
+    steps:
+      - name: clone
+        run: |
+          rm -rf /tmp/{libname}
+          git clone https://github.com/mirmik/{libname} /tmp/{libname}
+
+      - name: cmake
+        run: |
+          cd /tmp/{libname}
+          cmake .
+
+      - name: cmake-build
+        run: |
+          cd /tmp/{libname}
+          cmake --build .
+
+      - name: cmake-tests
+        run: |
+          cd /tmp/{libname}
+          ctest .
+
+pipeline:
+  - name: igris
+    use_template: netricks_library
+    args:
+      libname: igris
+
+  - name: nos
+    use_template: netricks_library
+    args:
+      libname: nos
+
+  - name: crow
+    use_template: netricks_library
+    args:
+      libname: crow
+
+  - name: ralgo
+    use_template: netricks_library
+    args:
+      libname: ralgo
+
+  - name: rabbit
+    use_template: netricks_library
+    args:
+      libname: rabbit

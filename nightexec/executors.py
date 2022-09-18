@@ -2,12 +2,24 @@ from .docker import (
     start_docker_container,
     exec_in_docker_container,
     upload_file_to_docker_container)
-import os
-import time
-import subprocess
+import abc
 
 
-class NativeExecutor:
+class StepExecutor:
+    @abc.abstractmethod
+    def init_executor(self, script_executor):
+        pass
+
+    @abc.abstractmethod
+    def run_script_cmd(self, file_path):
+        pass
+
+    @abc.abstractmethod
+    def upload_temporary_file(self, path):
+        pass
+
+
+class NativeExecutor(StepExecutor):
     def __init__(self, script_executor):
         self.init_executor(script_executor)
 
@@ -22,7 +34,7 @@ class NativeExecutor:
         pass
 
 
-class DockerExecutor:
+class DockerExecutor(StepExecutor):
     def __init__(self, image, script_executor, addfiles):
         self.image = image
         self.container_name = None

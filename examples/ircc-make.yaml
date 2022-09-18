@@ -1,41 +1,23 @@
-pipeline_name: igris-make
+pipeline:
+  - name: ircc
+    watchdog: 600
+    steps:
+      - name: clone
+        run: |
+          rm -rf /tmp/ircc
+          git clone https://github.com/mirmik/ircc /tmp/ircc
 
-watchdog: 600
+      - name: cmake
+        run: |
+          cd /tmp/ircc
+          cmake .
 
-prefix: |
-  function telegram_notify() {
-    token=`cat .atomtoken`
-    chatid=`cat .atomchat`
-    telenot --token ${token} --chatid ${chatid} --text $1
-  }
+      - name: cmake-build
+        run: |
+          cd /tmp/ircc
+          cmake --build .
 
-#on_failure:
-#  - name: "telegram_report"
-#    run: |
-#      telegram_notify "Fault {error_message}"
-
-#on_success:
-#  - name: "telegram_report"
-#    run: |
-#      telegram_notify "Success {pipeline_name}"
-
-tasks:
-  - name: clone
-    run: |
-      rm -rf /tmp/igris
-      git clone https://github.com/mirmik/igris /tmp/igris
-
-  - name: cmake
-    run: |
-      cd /tmp/igris
-      cmake .
-
-  - name: cmake-build
-    run: |
-      cd /tmp/igris
-      cmake --build .
-
-  - name: cmake-tests
-    run: |
-      cd /tmp/igris
-      cmake --test .
+      - name: cmake-tests
+        run: |
+          cd /tmp/ircc
+          ctest .
