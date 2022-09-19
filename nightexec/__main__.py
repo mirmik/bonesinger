@@ -1,5 +1,4 @@
 from .parser import parse_yaml
-from .telegram_notify import telegram_notify
 from .executors import NativeExecutor, DockerExecutor
 import argparse
 import threading
@@ -23,9 +22,6 @@ def do_step(pipeline_name,
     except Exception as e:
         print(f"Step {task.name} failed: {e}")
         return False
-        # status = False
-        # telegram_message = telegram_onfailure.format(task=task, error=e)
-        # return False, telegram_message
     return True, ""
 
 

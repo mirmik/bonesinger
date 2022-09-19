@@ -1,7 +1,6 @@
 from .executors import StepExecutor
 from .step import RunStep
 from .pipeline import Pipeline
-import tempfile
 from .util import strong_key_format
 
 
