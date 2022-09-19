@@ -69,7 +69,7 @@ def merge_dicts(dict_args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='bonesigner')
+    parser = argparse.ArgumentParser(description='bonesinger')
     # add multiple arguments
     parser.add_argument('scripts', nargs='*', type=str, help='Path to script')
     parser.add_argument('--entrance', type=str, help='Pipeline to execute')

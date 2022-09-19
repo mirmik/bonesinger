@@ -11,20 +11,20 @@ import os
 directory = os.path.dirname(os.path.realpath(__file__))
 
 setup(
-    name="bonesigner",
-    packages=["bonesigner"],
+    name="bonesinger",
+    packages=["bonesinger"],
     version="0.1.0",
     license="MIT",
     description="",
     author="mirmik",
     author_email="mirmikns@yandex.ru",
-    url="https://github.com/mirmik/bonesigner",
+    url="https://github.com/mirmik/bonesinger",
     long_description=open(os.path.join(directory, "README.md"), "r").read(),
     long_description_content_type="text/markdown",
     keywords=["testing", "cad"],
     classifiers=[],
     include_package_data=True,
     entry_points={"console_scripts": [
-        "bonesigner=bonesigner.__main__:main",
+        "bonesinger=bonesinger.__main__:main",
     ]},
 )

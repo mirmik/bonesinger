@@ -1,4 +1,4 @@
-from bonesigner.util import strong_key_format
+from bonesinger.util import strong_key_format
 from .step import RunStep, PipelineStep, SetVariableStep
 
 
