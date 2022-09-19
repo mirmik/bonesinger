@@ -13,7 +13,7 @@ directory = os.path.dirname(os.path.realpath(__file__))
 setup(
     name="bonesinger",
     packages=["bonesinger"],
-    version="0.2.0",
+    version="0.2.1",
     license="MIT",
     description="",
     author="mirmik",
