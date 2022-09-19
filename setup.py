@@ -11,20 +11,20 @@ import os
 directory = os.path.dirname(os.path.realpath(__file__))
 
 setup(
-    name="nightexec",
-    packages=["nightexec"],
+    name="bonesigner",
+    packages=["bonesigner"],
     version="0.1.0",
     license="MIT",
     description="",
     author="mirmik",
     author_email="mirmikns@yandex.ru",
-    url="https://github.com/mirmik/nightexec",
+    url="https://github.com/mirmik/bonesigner",
     long_description=open(os.path.join(directory, "README.md"), "r").read(),
     long_description_content_type="text/markdown",
     keywords=["testing", "cad"],
     classifiers=[],
     include_package_data=True,
     entry_points={"console_scripts": [
-        "nightexec=nightexec.__main__:main",
+        "bonesigner=bonesigner.__main__:main",
     ]},
 )

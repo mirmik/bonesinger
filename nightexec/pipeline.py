@@ -1,4 +1,4 @@
-from nightexec.util import strong_key_format
+from bonesigner.util import strong_key_format
 from .step import RunStep, PipelineStep, SetVariableStep
 
 
