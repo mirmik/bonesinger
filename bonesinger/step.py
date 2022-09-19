@@ -1,10 +1,7 @@
-import fcntl
-import os
-import sys
-import subprocess
-import time
+
 import json
 from .executors import StepExecutor
+from .util import merge_dicts
 
 
 class obj:
@@ -101,7 +98,7 @@ class RunStep(Step):
         executor.execute_script(
             script_lines=self.run_lines,
             pipeline_name=pipeline_name,
-            subst_dict=subst | matrix,
+            subst_dict=merge_dicts(subst, matrix),
             prefix=prefix,
             script_name=self.name,
             debug=self.core.is_debug_mode())

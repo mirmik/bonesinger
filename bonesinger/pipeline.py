@@ -1,5 +1,6 @@
 from bonesinger.util import strong_key_format
 from .step import RunStep, PipelineStep, SetVariableStep
+from .util import merge_dicts
 
 
 class Pipeline:
@@ -37,9 +38,9 @@ class Pipeline:
 
         if self.success_info_template is not None:
             self.success_info = strong_key_format(self.success_info_template,
-                                                  self.pipeline_subst |
-                                                  matrix_value |
-                                                  {"success_info": self.success_info})
+                                                  merge_dicts(self.pipeline_subst,
+                                                              matrix_value,
+                                                              {"success_info": self.success_info}))
             if self.core.is_debug_mode():
                 print(f"Success info: {self.success_info}")
 

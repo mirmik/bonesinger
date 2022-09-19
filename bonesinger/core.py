@@ -1,7 +1,7 @@
 from .executors import StepExecutor
 from .step import RunStep
 from .pipeline import Pipeline
-from .util import strong_key_format
+from .util import strong_key_format, merge_dicts
 
 
 def matrix_iterator(matrix):
@@ -85,7 +85,9 @@ class Core:
             for key in record["args"]:
                 subst[key] = record["args"][key]
             return self.pipeline_from_record(
-                self.compile_pipeline_record(template=template, subst=subst, name=name))
+                self.compile_pipeline_record(template=template,
+                                             subst=subst,
+                                             name=name))
         else:
             return Pipeline(
                 core=self,
