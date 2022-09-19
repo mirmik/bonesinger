@@ -67,7 +67,7 @@ class SetVariableStep(Step):
         output = executor.execute_script(
             script_lines=self.run_lines,
             pipeline_name=pipeline_name,
-            subst_dict=subst | matrix,
+            subst_dict=merge_dicts(subst, matrix),
             prefix=prefix,
             script_name=self.name,
             debug=self.core.is_debug_mode())
