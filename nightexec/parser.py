@@ -1,12 +1,6 @@
 #!/usr/bin/env python3
 
 import yaml
-import subprocess
-import time
-import fcntl
-import os
-import sys
-import json
 
 
 def parse_yaml(file):
