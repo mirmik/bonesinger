@@ -16,8 +16,7 @@ def parse_yaml(file):
             loader = yaml.Loader(stream)
             return loader.get_data()
         except yaml.YAMLError as exc:
-            print(exc)
-            return None
+            raise exc
 
 
 def make_prefix(yaml_data):

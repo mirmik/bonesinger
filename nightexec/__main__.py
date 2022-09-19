@@ -128,6 +128,8 @@ def main():
                 pipeline_template=pipeline_template)
 
     if args.entrance is not None:
+        if args.debug:
+            print("Entrance:", args.entrance)
         core.execute_entrypoint(args.entrance)
     elif len(dct["pipeline"]) == 1:
         core.execute_entrypoint(dct["pipeline"][0]["name"])

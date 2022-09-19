@@ -2,6 +2,7 @@ from .executors import StepExecutor
 from .step import RunStep
 from .pipeline import Pipeline
 import tempfile
+from .util import strong_key_format
 
 
 def matrix_iterator(matrix):
@@ -60,7 +61,7 @@ class Core:
     def compile_pipeline_record(self, name, template, subst):
         def subst_value(value):
             if isinstance(value, str):
-                return value.format(**subst)
+                return strong_key_format(value, subst)
             elif isinstance(value, list):
                 return [subst_value(x) for x in value]
             elif isinstance(value, dict):
@@ -76,6 +77,7 @@ class Core:
     def pipeline_from_record(self, record):
         name = record["name"]
         watchdog = record.get("watchdog", 0)
+        success_info = record.get("success_info", None)
 
         if "use_template" in record:
             template_name = record["use_template"]
@@ -90,7 +92,8 @@ class Core:
                 core=self,
                 name=name,
                 step_records=record["steps"],
-                watchdog=watchdog)
+                watchdog=watchdog,
+                success_info=success_info)
 
     def parse_pipelines(self, list_of_pipeline_records):
         pipelines = []
@@ -114,22 +117,37 @@ class Core:
         pipeline = self.find_pipeline(entrypoint)
         for matrix_value in matrix_iterator(self.matrix):
             try:
+                if self.debug:
+                    print(f"Execute pipeline {pipeline.name} for matrix value: {matrix_value}")
                 pipeline.execute(executor=self.executor,
                                  matrix_value=matrix_value,
                                  prefix=self.prefix)
             except Exception as e:
+                print("Exception: " + str(e))
                 self.on_failure(pipeline, matrix_value, e)
                 break
 
             self.on_success(pipeline, matrix_value)
 
     def on_success(self, pipeline, matrix_value):
+        if self.debug:
+            print("Success: " + pipeline.name)
+            print("Matrix value: " + str(matrix_value))
+            print("Success info: " + str(pipeline.success_info))
         for task in self.on_success_script:
             task.execute(pipeline_name=pipeline.name,
                          executor=self.executor,
                          matrix=matrix_value,
                          prefix=self.prefix,
-                         subst={"pipeline_name": pipeline.name})
+                         subst={"pipeline_name": pipeline.name,
+                                "success_info": pipeline.success_info})
 
     def on_failure(self, pipeline, matrix_value, exception):
-        pass
+        error_message = str(exception)
+        for task in self.on_failure_script:
+            task.execute(pipeline_name=pipeline.name,
+                         executor=self.executor,
+                         matrix=matrix_value,
+                         prefix=self.prefix,
+                         subst={"pipeline_name": pipeline.name,
+                                "error_message": error_message})

@@ -26,17 +26,56 @@ class Step:
 
 
 class PipelineStep(Step):
-    def __init__(self, core, name: str, pipeline_name: str, pipeline):
+    def __init__(self,
+                 core,
+                 name: str,
+                 pipeline_name: str,
+                 pipeline,
+                 success_info_action: str = None):
         self.core = core
         self.name = name
         self.pipeline_name = pipeline_name
         self.pipeline = pipeline
+        self.success_info_action = success_info_action
 
-    def execute(self, pipeline_name, executor: StepExecutor, matrix, prefix):
+    def execute(self, pipeline_name, executor: StepExecutor, matrix, prefix, subst: dict = {}):
+        if self.core.is_debug_mode():
+            print("Execute PipelineStep: " + self.name)
+
         pipeline = self.core.find_pipeline(self.pipeline_name)
         pipeline.execute(executor=executor,
                          matrix_value=matrix,
                          prefix=prefix)
+
+        if self.success_info_action == "append":
+            self.pipeline.success_info += pipeline.success_info + "\n"
+
+
+class SetVariableStep(Step):
+    def __init__(self,
+                 core,
+                 name: str,
+                 variable_name: str,
+                 pipeline,
+                 run_lines: list = None):
+        self.core = core
+        self.name = name
+        self.variable_name = variable_name
+        self.pipeline = pipeline
+        self.run_lines = run_lines
+
+    def execute(self, pipeline_name, executor: StepExecutor, matrix, prefix, subst: dict = {}):
+        if self.core.is_debug_mode():
+            print("Execute SetVariableStep: " + self.name)
+        output = executor.execute_script(
+            script_lines=self.run_lines,
+            pipeline_name=pipeline_name,
+            subst_dict=subst | matrix,
+            prefix=prefix,
+            script_name=self.name,
+            debug=self.core.is_debug_mode())
+
+        self.pipeline.set_variable(self.variable_name, output.strip())
 
 
 class RunStep(Step):
@@ -57,68 +96,12 @@ class RunStep(Step):
                 matrix: dict,
                 prefix: str,
                 subst: dict = {}):
-        print(
-            f"###PIPELINE: {pipeline_name} STEP: {self.name} matrix: {matrix}")
-
-        matrix = dict2obj(matrix)
-
-        # gererate random name for temporary file
-        tmp_file = f"/tmp/{pipeline_name}_{self.name}_{time.time()}.tmp"
-
-        with open(tmp_file, "w") as f:
-            f.write("#!{script_executor}\n")
-            f.write("set -ex\n")
-            f.write(prefix)
-
-            for line in self.run_lines:
-                line = line.format(**subst)
-                f.write(line + "\n")
-
-        executor.upload_temporary_file(tmp_file)
-
         if self.core.is_debug_mode():
-            print(f"###DEBUG: {self.run_lines}")
-            print(prefix)
-
-        # run tmp/script.sh and listen stdout and stderr
-        proc = subprocess.Popen(executor.run_script_cmd(tmp_file), shell=True,
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        # set non-blocking output
-        fcntl.fcntl(proc.stdout, fcntl.F_SETFL, fcntl.fcntl(
-            proc.stdout, fcntl.F_GETFL) | os.O_NONBLOCK)
-        fcntl.fcntl(proc.stderr, fcntl.F_SETFL, fcntl.fcntl(
-            proc.stderr, fcntl.F_GETFL) | os.O_NONBLOCK)
-
-        while True:
-            # read stdout
-            try:
-                line = proc.stdout.read()
-                if line:
-                    print(line.decode("utf-8").strip())
-            except Exception as e:
-                print(e)
-                pass
-
-            # read stderr
-            try:
-                line = proc.stderr.read()
-                if line:
-                    print(line.decode("utf-8").strip())
-            except Exception as e:
-                print(e)
-                pass
-
-            sys.stdout.flush()
-
-            # check if process is finished
-            if proc.poll() is not None:
-                break
-
-            # sleep for 0.1 second
-            time.sleep(0.1)
-
-        # print exit code
-        print(f"Exit code: {proc.returncode}")
-        if proc.returncode != 0:
-            raise Exception(f"Exit code: {proc.returncode}")
+            print("Execute RunStep: " + self.name)
+        executor.execute_script(
+            script_lines=self.run_lines,
+            pipeline_name=pipeline_name,
+            subst_dict=subst | matrix,
+            prefix=prefix,
+            script_name=self.name,
+            debug=self.core.is_debug_mode())

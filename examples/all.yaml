@@ -3,18 +3,26 @@ pipeline:
     steps:
       - name: igris
         run_pipeline: igris
+        success_info: append
 
       - name: nos
         run_pipeline: nos
+        success_info: append
 
       - name: crow
         run_pipeline: crow
+        success_info: append
 
       - name: ralgo
         run_pipeline: ralgo
+        success_info: append
 
       - name: rabbit
         run_pipeline: rabbit
+        success_info: append
 
       - name: ircc
         run_pipeline: ircc
+        success_info: append
+
+    success_info: "Night build complete: \n\n{{success_info}}"

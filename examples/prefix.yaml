@@ -9,9 +9,9 @@ prefix:
 on_failure:
   - name: "telegram_report"
     run: |
-      telegram_notify "Fault {error_message}"
+      telegram_notify "Fault {{pipeline_name}}: {{error_message}}"
 
 on_success:
   - name: "telegram_report"
     run: |
-      telegram_notify "Success {pipeline_name}"
+      telegram_notify "Success Info: {{success_info}}"
