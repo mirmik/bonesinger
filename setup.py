@@ -13,7 +13,7 @@ directory = os.path.dirname(os.path.realpath(__file__))
 setup(
     name="nightexec",
     packages=["nightexec"],
-    version="0.0.0",
+    version="0.1.0",
     license="MIT",
     description="",
     author="mirmik",
