@@ -21,6 +21,15 @@ def matrix_iterator(matrix):
         yield matrix_value
 
 
+def sanitize_url(text):
+    # find url in text and replace it with "***url***"
+    # to hide it from logs
+    import re
+    url_regex = re.compile(
+        r'(?:(?:https?|ftp):\/\/)?[\w/\-?=%.]+\.[\w/\-?=%.]+')
+    return url_regex.sub('***url***', text)
+
+
 class Core:
     def __init__(self,
                  executor: StepExecutor,
@@ -30,7 +39,8 @@ class Core:
                  pipeline_records: list,
                  on_success_records: dict,
                  on_failure_records: dict,
-                 pipeline_template: list):
+                 pipeline_template: list,
+                 security_options: dict):
         self.pipeline_template = pipeline_template
         self.executor = executor
         self.matrix = matrix
@@ -39,6 +49,7 @@ class Core:
         self.pipelines = self.parse_pipelines(pipeline_records)
         self.on_success_script = self.make_task_list(on_success_records)
         self.on_failure_script = self.make_task_list(on_failure_records)
+        self.security_options = security_options
 
     def make_task_list(self, records) -> list:
         """make list of Step objects from records"""
@@ -119,7 +130,8 @@ class Core:
         for matrix_value in matrix_iterator(self.matrix):
             try:
                 if self.debug:
-                    print(f"Execute pipeline {pipeline.name} for matrix value: {matrix_value}")
+                    print(
+                        f"Execute pipeline {pipeline.name} for matrix value: {matrix_value}")
                 pipeline.execute(executor=self.executor,
                                  matrix_value=matrix_value,
                                  prefix=self.prefix)
@@ -131,6 +143,9 @@ class Core:
             self.on_success(pipeline, matrix_value)
 
     def on_success(self, pipeline, matrix_value):
+        if self.security_options["hide_links"]:
+            pipeline.success_info = sanitize_url(pipeline.success_info)
+
         if self.debug:
             print("Success: " + pipeline.name)
             print("Matrix value: " + str(matrix_value))
@@ -144,6 +159,9 @@ class Core:
                                 "success_info": pipeline.success_info})
 
     def on_failure(self, pipeline, matrix_value, exception):
+        if self.security_options["hide_links"]:
+            pipeline.success_info = sanitize_url(pipeline.success_info)
+
         error_message = str(exception)
         for task in self.on_failure_script:
             task.execute(pipeline_name=pipeline.name,

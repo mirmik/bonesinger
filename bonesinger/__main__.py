@@ -74,7 +74,8 @@ def main():
     parser.add_argument('scripts', nargs='*', type=str, help='Path to script')
     parser.add_argument('--entrance', type=str, help='Pipeline to execute')
     parser.add_argument('--debug', action='store_true', help='Debug mode')
-    parser.add_argument('--docker', type=str, help='Docker image to use', default=None)
+    parser.add_argument('--docker', type=str,
+                        help='Docker image to use', default=None)
     parser.add_argument('-n', '--step', help='step name',
                         default="", required=False)
     args = parser.parse_args()
@@ -114,6 +115,11 @@ def main():
     else:
         pipeline_template = {}
 
+    hide_links = False
+    if "security" in dct:
+        if "hide_links" in dct["security"]:
+            hide_links = dct["security"]["hide_links"]
+
     core = Core(executor=executor,
                 matrix=matrix,
                 prefix=prefix,
@@ -121,7 +127,8 @@ def main():
                 pipeline_records=dct["pipeline"],
                 on_success_records=dct.get("on_success", None),
                 on_failure_records=dct.get("on_failure", None),
-                pipeline_template=pipeline_template)
+                pipeline_template=pipeline_template,
+                security_options={"hide_links": hide_links})
 
     if args.entrance is not None:
         if args.debug:
