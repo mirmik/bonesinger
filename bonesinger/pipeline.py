@@ -1,6 +1,8 @@
 from bonesinger.util import strong_key_format
 from .step import RunStep, PipelineStep, SetVariableStep
 from .util import merge_dicts
+import os
+from git import Repo
 
 
 class Pipeline:
@@ -9,7 +11,9 @@ class Pipeline:
                  name: str,
                  step_records: list,
                  watchdog: int,
-                 success_info: str):
+                 success_info: str,
+                 workspace: str,
+                 gitdata: dict):
         self.name = name
         self.core = core
         self.steps = self.parse_steps(step_records)
@@ -17,21 +21,32 @@ class Pipeline:
         self.pipeline_subst = {}
         self.success_info_template = success_info
         self.success_info = ""
+        self.workspace = workspace
+        self.gitdata = gitdata
 
-    def execute(self, executor, matrix_value, prefix):
+    def execute(self, executor, matrix_value, prefix, subst):
+        os.chdir(self.workspace)
+
+        if self.gitdata:
+            print(self.gitdata)
+            Repo.clone(self.gitdata["url"], self.gitdata["name"])
+            self.workspace = os.path.join(self.workspace, self.gitdata["name"])
+            os.chdir(self.workspace)
+
         if self.core.is_debug_mode():
             print("Executing pipeline " + self.name)
             for step in self.steps:
                 print("  " + str(step))
         for step in self.steps:
             if self.core.is_debug_mode():
-                print(f"Execute step {step.name} for matrix value: {matrix_value}")
+                print(
+                    f"Execute step {step.name} for matrix value: {matrix_value}")
             try:
                 step.execute(pipeline_name=self.name,
                              executor=executor,
                              matrix=matrix_value,
                              prefix=prefix,
-                             subst=self.pipeline_subst)
+                             subst=merge_dicts(self.pipeline_subst, subst))
             except Exception as e:
                 print(f"Error in step {step.name}: {e}")
                 raise e

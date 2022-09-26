@@ -2,6 +2,9 @@ from .executors import StepExecutor
 from .step import RunStep
 from .pipeline import Pipeline
 from .util import strong_key_format, merge_dicts
+import tempfile
+import os
+from git import Repo
 
 
 def matrix_iterator(matrix):
@@ -88,6 +91,21 @@ class Core:
         name = record["name"]
         watchdog = record.get("watchdog", 0)
         success_info = record.get("success_info", None)
+        workspace = record.get("workspace", None)
+
+        gitdata = None
+        if workspace is None:
+            workspace = tempfile.mkdtemp()
+
+        if "git" in record:
+            git = record["git"]
+            giturl = git["url"]
+            gitbranch = git.get("branch", "master")
+            gitcommit = git.get("commit", None)
+            gitname = git.get("name", None)
+            gitdata = {"url": giturl, "branch": gitbranch,
+                       "commit": gitcommit, "name": gitname}
+            #workspace = os.path.join(workspace, name)
 
         if "use_template" in record:
             template_name = record["use_template"]
@@ -105,7 +123,9 @@ class Core:
                 name=name,
                 step_records=record["steps"],
                 watchdog=watchdog,
-                success_info=success_info)
+                success_info=success_info,
+                workspace=workspace,
+                gitdata=gitdata)
 
     def parse_pipelines(self, list_of_pipeline_records):
         pipelines = []
@@ -125,7 +145,13 @@ class Core:
                 return template
         raise Exception("Pipeline template not found: " + name)
 
+    def create_build_directory_and_change_it(self):
+        temporary_directory = tempfile.mkdtemp()
+        os.chdir(temporary_directory)
+        self.workspace = temporary_directory
+
     def execute_entrypoint(self, entrypoint: str):
+        self.create_build_directory_and_change_it()
         pipeline = self.find_pipeline(entrypoint)
         for matrix_value in matrix_iterator(self.matrix):
             try:
@@ -134,7 +160,8 @@ class Core:
                         f"Execute pipeline {pipeline.name} for matrix value: {matrix_value}")
                 pipeline.execute(executor=self.executor,
                                  matrix_value=matrix_value,
-                                 prefix=self.prefix)
+                                 prefix=self.prefix,
+                                 subst={})
             except Exception as e:
                 print("Exception: " + str(e))
                 self.on_failure(pipeline, matrix_value, e)

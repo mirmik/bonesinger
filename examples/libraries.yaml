@@ -4,39 +4,39 @@ pipeline_template:
     steps:
       - name: clone
         run: |
-          rm -rf /tmp/{{libname}}
-          git clone https://github.com/mirmik/{{libname}} /tmp/{{libname}}
+          rm -rf {{workspace}}/{{libname}}
+          git clone https://github.com/mirmik/{{libname}} {{workspace}}/{{libname}}
 
       - name: get_commit_hash
         set_variable: commit_hash
         script: |
-          cd /tmp/{{libname}}
+          cd {{workspace}}/{{libname}}
           git rev-parse HEAD
 
       - name: get_commit_message
         set_variable: commit_message
         script: |
-          cd /tmp/{{libname}}
+          cd {{workspace}}/{{libname}}
           git log -1 --pretty=%B
 
       - name: cmake
         run: |
-          cd /tmp/{{libname}}
+          cd {{workspace}}/{{libname}}
           cmake .
 
       - name: cmake-build
         run: |
-          cd /tmp/{{libname}}
+          cd {{workspace}}/{{libname}}
           cmake --build .
 
       - name: cmake-install
         run: |
-          cd /tmp/{{libname}}
+          cd {{workspace}}/{{libname}}
           cmake --build . --target install
 
       - name: cmake-tests
         run: |
-          cd /tmp/{{libname}}
+          cd {{workspace}}/{{libname}}
           ctest .
 
     success_info: "Pipeline: {{libname}}\nCommit: {{commit_hash}}\nMessage: {{commit_message}}\n"
