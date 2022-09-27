@@ -42,7 +42,8 @@ class PipelineStep(Step):
         pipeline = self.core.find_pipeline(self.pipeline_name)
         pipeline.execute(executor=executor,
                          matrix_value=matrix,
-                         prefix=prefix)
+                         prefix=prefix,
+                         subst=subst)
 
         if self.success_info_action == "append":
             self.pipeline.success_info += pipeline.success_info + "\n"
