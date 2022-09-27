@@ -185,7 +185,8 @@ class Core:
                          matrix=matrix_value,
                          prefix=self.prefix,
                          subst={"pipeline_name": pipeline.name,
-                                "success_info": pipeline.success_info})
+                                "success_info": pipeline.success_info,
+                                **pipeline.pipeline_subst})
 
     def on_failure(self, pipeline, matrix_value, exception):
         if self.security_options["hide_links"]:
@@ -198,4 +199,5 @@ class Core:
                          matrix=matrix_value,
                          prefix=self.prefix,
                          subst={"pipeline_name": pipeline.name,
-                                "error_message": error_message})
+                                "error_message": error_message,
+                                **pipeline.pipeline_subst})

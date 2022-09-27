@@ -18,7 +18,7 @@ class Pipeline:
         self.core = core
         self.steps = self.parse_steps(step_records)
         self.watchdog = watchdog
-        self.pipeline_subst = {}
+        self.pipeline_subst = {"pipeline_name": name}
         self.success_info_template = success_info
         self.success_info = ""
         self.workspace = workspace
@@ -32,9 +32,11 @@ class Pipeline:
             name = self.gitdata["name"]
             print(self.gitdata)
             print(f"Clone repository: {url} {name}")
-            Repo.clone_from(url, name)
+            repo = Repo.clone_from(url, name)
             self.workspace = os.path.join(self.workspace, name)
             os.chdir(self.workspace)
+            self.pipeline_subst["commit_hash"] = repo.head.object.hexsha
+            self.pipeline_subst["commit_message"] = repo.head.object.message
 
         if self.core.is_debug_mode():
             print("Executing pipeline " + self.name)
