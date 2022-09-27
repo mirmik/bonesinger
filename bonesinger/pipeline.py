@@ -28,9 +28,12 @@ class Pipeline:
         os.chdir(self.workspace)
 
         if self.gitdata:
+            url = self.gitdata["url"]
+            name = self.gitdata["name"]
             print(self.gitdata)
-            Repo.clone(self.gitdata["url"], self.gitdata["name"])
-            self.workspace = os.path.join(self.workspace, self.gitdata["name"])
+            print(f"Clone repository: {url} {name}")
+            Repo.clone_from(url, name)
+            self.workspace = os.path.join(self.workspace, name)
             os.chdir(self.workspace)
 
         if self.core.is_debug_mode():

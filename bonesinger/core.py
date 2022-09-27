@@ -5,6 +5,7 @@ from .util import strong_key_format, merge_dicts
 import tempfile
 import os
 from git import Repo
+import traceback
 
 
 def matrix_iterator(matrix):
@@ -164,6 +165,7 @@ class Core:
                                  subst={})
             except Exception as e:
                 print("Exception: " + str(e))
+                print("Traceback: " + traceback.format_exc())
                 self.on_failure(pipeline, matrix_value, e)
                 break
 
