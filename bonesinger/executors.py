@@ -40,7 +40,7 @@ class StepExecutor:
         return path
 
     @abc.abstractmethod
-    def clone_repository(self, url, name):
+    def clone_repository(self, url, name, basepath):
         pass
 
     def execute_script(self,
@@ -145,8 +145,19 @@ class NativeExecutor(StepExecutor):
     def create_directory(self, path):
         os.mkdir(path)
 
-    def clone_repository(self, url, name):
-        subprocess.run(["git", "clone", url, name])
+    def clone_repository(self, url, name, basepath):
+        cmd = f"git clone {url} {basepath}/{name}"
+        subprocess.run(cmd, shell=True)
+
+        # get commit hash to commit variable
+        proc = subprocess.Popen(["git", "rev-parse", "HEAD"], cwd=name, stdout=subprocess.PIPE)
+        commit = proc.stdout.read().decode("utf-8").strip()
+
+        # get message to message variable
+        proc = subprocess.Popen(["git", "log", "-1", "--pretty=%B"], cwd=name, stdout=subprocess.PIPE)
+        message = proc.stdout.read().decode("utf-8").strip()
+
+        return {"commit": commit, "message": message}
 
 
 class DockerExecutor(StepExecutor):
@@ -180,5 +191,13 @@ class DockerExecutor(StepExecutor):
         print("DockerExecutor.create_directory: " + path)
         exec_in_docker_container(self.container_name, f"mkdir -p {path}")
 
-    def clone_repository(self, url, name):
-        exec_in_docker_container(self.container_name, f"git clone {url} {name}")
+    def clone_repository(self, url, name, basepath):
+        exec_in_docker_container(self.container_name, f"git clone {url} {basepath}/{name}")
+
+        # get commit hash to commit variable
+        commit = exec_in_docker_container(self.container_name, f"git -C {name} rev-parse HEAD")
+
+        # get message to message variable
+        message = exec_in_docker_container(self.container_name, f"git -C {name} log -1 --pretty=%B")
+
+        return {"commit": commit, "message": message}

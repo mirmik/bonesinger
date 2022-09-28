@@ -12,7 +12,12 @@ def start_docker_container(image, cmd):
 
 def exec_in_docker_container(container_name, cmd):
     cmd = f"docker exec {container_name} {cmd}"
-    subprocess.run(cmd, shell=True)
+
+    # execute and get output from command
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    output = p.stdout.read().decode("utf-8").strip()
+
+    return output
 
 
 def upload_file_to_docker_container(container_name, file_path, dest_path):

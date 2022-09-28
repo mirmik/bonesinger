@@ -78,11 +78,11 @@ class Pipeline:
             name = self.gitdata["name"]
             print(self.gitdata)
             print(f"Clone repository: {url} {name}")
-            repo = self.core.executor.clone_repository(url, name)
+            info = self.core.executor.clone_repository(url, name, basepath=self.workspace)
             self.workspace = os.path.join(self.workspace, name)
             self.core.executor.chdir(self.workspace)
-            self.pipeline_subst["commit_hash"] = repo.head.object.hexsha
-            self.pipeline_subst["commit_message"] = repo.head.object.message
+            self.pipeline_subst["commit_hash"] = info["commit"]
+            self.pipeline_subst["commit_message"] = info["message"]
 
         if self.core.is_debug_mode():
             print("Executing pipeline " + self.name)
