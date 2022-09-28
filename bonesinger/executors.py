@@ -8,7 +8,8 @@ import subprocess
 import fcntl
 import sys
 import os
-from .util import strong_key_format
+from .util import strong_key_format, generate_random_string
+import tempfile
 
 
 class StepExecutor:
@@ -27,6 +28,14 @@ class StepExecutor:
     @abc.abstractmethod
     def chdir(self, path):
         pass
+
+    @abc.abstractmethod
+    def create_directory(self, path):
+        pass
+
+    def make_temporary_directory(self):
+        random_name = generate_random_string(10)
+        self.create_directory(random_name)
 
     def execute_script(self,
                        script_lines,
@@ -127,6 +136,9 @@ class NativeExecutor(StepExecutor):
     def chdir(self, path):
         os.chdir(path)
 
+    def create_directory(self, path):
+        os.mkdir(path)
+
 
 class DockerExecutor(StepExecutor):
     def __init__(self, image, script_executor, addfiles=[]):
@@ -154,3 +166,6 @@ class DockerExecutor(StepExecutor):
 
     def chdir(self, path):
         self.current_directory = path
+
+    def create_directory(self, path):
+        exec_in_docker_container(self.container_name, f"mkdir -p {path}")

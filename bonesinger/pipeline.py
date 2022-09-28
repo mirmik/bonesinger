@@ -37,7 +37,7 @@ class Pipeline:
 
         gitdata = None
         if workspace is None:
-            workspace = tempfile.mkdtemp()
+            workspace = core.executor.make_temporary_directory()
 
         if "git" in record:
             git = record["git"]

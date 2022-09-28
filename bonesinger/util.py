@@ -1,3 +1,6 @@
+import random
+import string
+
 
 def strong_key_format(line, keys):
     for key, value in keys.items():
@@ -24,3 +27,7 @@ def merge_dicts_and_lists(*dict_args):
             else:
                 result[key] = value
     return result
+
+
+def generate_random_string(length=8):
+    return ''.join(random.choice(string.ascii_lowercase) for _ in range(length))
