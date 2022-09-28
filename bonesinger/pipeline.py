@@ -93,6 +93,7 @@ class Pipeline:
                 print(
                     f"Execute step {step.name} for matrix value: {matrix_value}")
             try:
+                os.chdir(self.workspace)
                 step.execute(pipeline_name=self.name,
                              executor=executor,
                              matrix=matrix_value,
