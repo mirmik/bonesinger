@@ -5,6 +5,7 @@ import threading
 import os
 import pprint
 from .core import Core
+from .util import merge_dicts_and_lists, merge_dicts
 
 CANCEL_TOKEN = False
 
@@ -54,20 +55,6 @@ def set_cancel_token():
     CANCEL_TOKEN = True
 
 
-def merge_dicts(dict_args):
-    """ Deep merge dicts common way, but extend lists if it has some keys. """
-    result = {}
-    for dictionary in dict_args:
-        for key, value in dictionary.items():
-            if key in result and isinstance(result[key], dict):
-                result[key] = merge_dicts(result[key], value)
-            elif key in result and isinstance(result[key], list):
-                result[key] = result[key] + value
-            else:
-                result[key] = value
-    return result
-
-
 def main():
     parser = argparse.ArgumentParser(description='bonesinger')
     # add multiple arguments
@@ -84,7 +71,7 @@ def main():
 
     filepathes = args.scripts
     dct = {}
-    dct = merge_dicts([parse_yaml(fpath) for fpath in filepathes])
+    dct = merge_dicts_and_lists(*[parse_yaml(fpath) for fpath in filepathes])
 
     if args.debug:
         pp = pprint.PrettyPrinter(indent=4)
