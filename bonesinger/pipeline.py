@@ -37,7 +37,7 @@ class Pipeline:
 
         gitdata = None
         if workspace is None:
-            print("Create pipeline workspace")
+            print("Create workspace of current pipeline")
             workspace = core.executor.make_temporary_directory()
 
         if "git" in record:
@@ -93,7 +93,7 @@ class Pipeline:
                 print(
                     f"Execute step {step.name} for matrix value: {matrix_value}")
             try:
-                print("Chdir to current pipeline workspace: " + self.workspace)
+                print("Chdir to workspace of current pipeline: " + self.workspace)
                 self.core.executor.chdir(self.workspace)
                 step.execute(pipeline_name=self.name,
                              executor=executor,

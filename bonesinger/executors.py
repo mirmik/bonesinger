@@ -39,6 +39,10 @@ class StepExecutor:
         self.create_directory(path)
         return path
 
+    @abc.abstractmethod
+    def clone_repository(self, url, name):
+        pass
+
     def execute_script(self,
                        script_lines,
                        pipeline_name,
@@ -141,6 +145,9 @@ class NativeExecutor(StepExecutor):
     def create_directory(self, path):
         os.mkdir(path)
 
+    def clone_repository(self, url, name):
+        subprocess.run(["git", "clone", url, name])
+
 
 class DockerExecutor(StepExecutor):
     def __init__(self, image, script_executor, addfiles=[]):
@@ -172,3 +179,6 @@ class DockerExecutor(StepExecutor):
     def create_directory(self, path):
         print("DockerExecutor.create_directory: " + path)
         exec_in_docker_container(self.container_name, f"mkdir -p {path}")
+
+    def clone_repository(self, url, name):
+        exec_in_docker_container(self.container_name, f"git clone {url} {name}")
