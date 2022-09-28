@@ -78,7 +78,7 @@ class Pipeline:
             name = self.gitdata["name"]
             print(self.gitdata)
             print(f"Clone repository: {url} {name}")
-            repo = Repo.clone_from(url, name)
+            repo = self.core.executor.clone_repository(url, name)
             self.workspace = os.path.join(self.workspace, name)
             self.core.executor.chdir(self.workspace)
             self.pipeline_subst["commit_hash"] = repo.head.object.hexsha
