@@ -124,7 +124,9 @@ class Core:
                                  prefix=self.prefix,
                                  subst={})
             except Exception as e:
+                current_directory = os.getcwd()
                 print("Exception: " + str(e))
+                print("Location: " + current_directory)
                 print("Traceback: " + traceback.format_exc())
                 self.on_failure(pipeline, matrix_value, e)
                 break
