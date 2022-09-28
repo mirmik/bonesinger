@@ -36,6 +36,7 @@ class StepExecutor:
     def make_temporary_directory(self):
         random_name = generate_random_string(10)
         self.create_directory(random_name)
+        return random_name
 
     def execute_script(self,
                        script_lines,
