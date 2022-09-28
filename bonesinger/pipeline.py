@@ -73,12 +73,14 @@ class Pipeline:
     def execute(self, executor, matrix_value, prefix, subst):
         self.core.executor.chdir(self.workspace)
 
+        # clone repository if pipeline has git section
         if self.gitdata:
             url = self.gitdata["url"]
             name = self.gitdata["name"]
+            branch = self.gitdata.get("branch", None)
             print(self.gitdata)
             print(f"Clone repository: {url} {name}")
-            info = self.core.executor.clone_repository(url, name, basepath=self.workspace)
+            info = self.core.executor.clone_repository(url, name, basepath=self.workspace, branch=branch)
             self.workspace = os.path.join(self.workspace, name)
             self.core.executor.chdir(self.workspace)
             self.pipeline_subst["commit_hash"] = info["commit"]
