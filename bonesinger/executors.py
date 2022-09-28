@@ -24,6 +24,10 @@ class StepExecutor:
     def upload_temporary_file(self, path):
         pass
 
+    @abc.abstractmethod
+    def chdir(self, path):
+        pass
+
     def execute_script(self,
                        script_lines,
                        pipeline_name,
@@ -120,6 +124,9 @@ class NativeExecutor(StepExecutor):
     def upload_temporary_file(self, path):
         pass
 
+    def chdir(self, path):
+        os.chdir(path)
+
 
 class DockerExecutor(StepExecutor):
     def __init__(self, image, script_executor, addfiles=[]):
@@ -140,3 +147,6 @@ class DockerExecutor(StepExecutor):
 
     def upload_temporary_file(self, path):
         upload_file_to_docker_container(self.container_name, path, path)
+
+    def chdir(self, path):
+        exec_in_docker_container(self.container_name, f"cd {path}")

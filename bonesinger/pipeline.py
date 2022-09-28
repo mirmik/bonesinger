@@ -70,7 +70,7 @@ class Pipeline:
                 gitdata=gitdata)
 
     def execute(self, executor, matrix_value, prefix, subst):
-        os.chdir(self.workspace)
+        self.core.executor.chdir(self.workspace)
 
         if self.gitdata:
             url = self.gitdata["url"]
@@ -79,8 +79,7 @@ class Pipeline:
             print(f"Clone repository: {url} {name}")
             repo = Repo.clone_from(url, name)
             self.workspace = os.path.join(self.workspace, name)
-            print("Chdir to current pipeline workspace: " + self.workspace)
-            os.chdir(self.workspace)
+            self.core.executor.chdir(self.workspace)
             self.pipeline_subst["commit_hash"] = repo.head.object.hexsha
             self.pipeline_subst["commit_message"] = repo.head.object.message
 
@@ -93,7 +92,8 @@ class Pipeline:
                 print(
                     f"Execute step {step.name} for matrix value: {matrix_value}")
             try:
-                os.chdir(self.workspace)
+                print("Chdir to current pipeline workspace: " + self.workspace)
+                self.core.executor.chdir(self.workspace)
                 step.execute(pipeline_name=self.name,
                              executor=executor,
                              matrix=matrix_value,
