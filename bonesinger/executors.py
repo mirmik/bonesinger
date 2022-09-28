@@ -133,6 +133,7 @@ class DockerExecutor(StepExecutor):
         self.image = image
         self.container_name = None
         self.init_executor(script_executor, addfiles)
+        self.current_directory = None
 
     def init_executor(self, script_executor, addfiles):
         self.script_executor = script_executor
@@ -142,11 +143,14 @@ class DockerExecutor(StepExecutor):
             upload_file_to_docker_container(self.container_name, addfile["src"], addfile["dst"])
 
     def run_script_cmd(self, file_path):
-        cmd = f"docker exec {self.container_name} {self.script_executor} {file_path}"
+        if self.current_directory:
+            cmd = f"docker exec -w {self.current_directory} {self.container_name} {self.script_executor} {file_path}"
+        else:
+            cmd = f"docker exec {self.container_name} {self.script_executor} {file_path}"
         return cmd
 
     def upload_temporary_file(self, path):
         upload_file_to_docker_container(self.container_name, path, path)
 
     def chdir(self, path):
-        exec_in_docker_container(self.container_name, f"cd {path}")
+        self.current_directory = path
