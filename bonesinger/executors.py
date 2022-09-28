@@ -195,9 +195,9 @@ class DockerExecutor(StepExecutor):
         exec_in_docker_container(self.container_name, f"git clone {url} {basepath}/{name}")
 
         # get commit hash to commit variable
-        commit = exec_in_docker_container(self.container_name, f"git -C {name} rev-parse HEAD")
+        commit = exec_in_docker_container(self.container_name, f"git -C {basepath}/{name} rev-parse HEAD")
 
         # get message to message variable
-        message = exec_in_docker_container(self.container_name, f"git -C {name} log -1 --pretty=%B")
+        message = exec_in_docker_container(self.container_name, f"git -C {basepath}/{name} log -1 --pretty=%B")
 
         return {"commit": commit, "message": message}
