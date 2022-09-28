@@ -170,4 +170,5 @@ class DockerExecutor(StepExecutor):
         self.current_directory = path
 
     def create_directory(self, path):
+        print("DockerExecutor.create_directory: " + path)
         exec_in_docker_container(self.container_name, f"mkdir -p {path}")
