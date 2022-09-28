@@ -37,6 +37,7 @@ class Pipeline:
 
         gitdata = None
         if workspace is None:
+            print("Create pipeline workspace")
             workspace = core.executor.make_temporary_directory()
 
         if "git" in record:
