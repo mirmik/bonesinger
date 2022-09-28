@@ -19,7 +19,33 @@ def dict2obj(dict1):
 
 
 class Step:
-    pass
+    @staticmethod
+    def from_record(step_record, pipeline, core):
+        name = step_record["name"]
+        if "run" in step_record:
+            run = step_record["run"]
+            return RunStep(core=core,
+                           name=name,
+                           run=run,
+                           pipeline=pipeline)
+        elif "run_pipeline" in step_record:
+            pipeline_name = step_record["run_pipeline"]
+            success_info_action = step_record.get("success_info", "ignore")
+            return PipelineStep(core=core,
+                                name=name,
+                                pipeline_name=pipeline_name,
+                                pipeline=pipeline,
+                                success_info_action=success_info_action)
+        elif "set_variable" in step_record:
+            variable_name = step_record["set_variable"]
+            run_script = step_record["script"]
+            return SetVariableStep(core=core,
+                                   name=name,
+                                   variable_name=variable_name,
+                                   run_lines=run_script.split("\n"),
+                                   pipeline=pipeline)
+        else:
+            raise Exception("Invalid step record: " + str(step_record))
 
 
 class PipelineStep(Step):

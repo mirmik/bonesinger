@@ -88,50 +88,10 @@ class Core:
 
         return rec
 
-    def pipeline_from_record(self, record):
-        name = record["name"]
-        watchdog = record.get("watchdog", 0)
-        success_info = record.get("success_info", None)
-        workspace = record.get("workspace", None)
-
-        gitdata = None
-        if workspace is None:
-            workspace = tempfile.mkdtemp()
-
-        if "git" in record:
-            git = record["git"]
-            giturl = git["url"]
-            gitbranch = git.get("branch", "master")
-            gitcommit = git.get("commit", None)
-            gitname = git.get("name", None)
-            gitdata = {"url": giturl, "branch": gitbranch,
-                       "commit": gitcommit, "name": gitname}
-            #workspace = os.path.join(workspace, name)
-
-        if "use_template" in record:
-            template_name = record["use_template"]
-            template = self.find_pipeline_template(template_name)
-            subst = {}
-            for key in record["args"]:
-                subst[key] = record["args"][key]
-            return self.pipeline_from_record(
-                self.compile_pipeline_record(template=template,
-                                             subst=subst,
-                                             name=name))
-        else:
-            return Pipeline(
-                core=self,
-                name=name,
-                step_records=record["steps"],
-                watchdog=watchdog,
-                success_info=success_info,
-                workspace=workspace,
-                gitdata=gitdata)
-
     def parse_pipelines(self, list_of_pipeline_records):
         pipelines = []
         for pipeline_record in list_of_pipeline_records:
-            pipelines.append(self.pipeline_from_record(pipeline_record))
+            pipelines.append(Pipeline.from_record(pipeline_record, core=self))
         return pipelines
 
     def find_pipeline(self, name: str):

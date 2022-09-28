@@ -1,7 +1,8 @@
 from bonesinger.util import strong_key_format
-from .step import RunStep, PipelineStep, SetVariableStep
+from .step import Step
 from .util import merge_dicts
 import os
+import tempfile
 from git import Repo
 
 
@@ -16,13 +17,57 @@ class Pipeline:
                  gitdata: dict):
         self.name = name
         self.core = core
-        self.steps = self.parse_steps(step_records)
+        self.steps = self.parse_steps(step_records, core)
         self.watchdog = watchdog
         self.pipeline_subst = {"pipeline_name": name}
         self.success_info_template = success_info
         self.success_info = ""
         self.workspace = workspace
         self.gitdata = gitdata
+
+    def parse_steps(self, step_records, core):
+        return [Step.from_record(record, pipeline=self, core=core) for record in step_records]
+
+    @staticmethod
+    def from_record(record, core):
+        name = record["name"]
+        watchdog = record.get("watchdog", 0)
+        success_info = record.get("success_info", None)
+        workspace = record.get("workspace", None)
+
+        gitdata = None
+        if workspace is None:
+            workspace = tempfile.mkdtemp()
+
+        if "git" in record:
+            git = record["git"]
+            giturl = git["url"]
+            gitbranch = git.get("branch", "master")
+            gitcommit = git.get("commit", None)
+            gitname = git.get("name", None)
+            gitdata = {"url": giturl, "branch": gitbranch,
+                       "commit": gitcommit, "name": gitname}
+            #workspace = os.path.join(workspace, name)
+
+        if "use_template" in record:
+            template_name = record["use_template"]
+            template = core.find_pipeline_template(template_name)
+            subst = {}
+            for key in record["args"]:
+                subst[key] = record["args"][key]
+            return Pipeline.from_record(
+                core.compile_pipeline_record(template=template,
+                                             subst=subst,
+                                             name=name), core=core)
+        else:
+            return Pipeline(
+                core=core,
+                name=name,
+                step_records=record["steps"],
+                watchdog=watchdog,
+                success_info=success_info,
+                workspace=workspace,
+                gitdata=gitdata)
 
     def execute(self, executor, matrix_value, prefix, subst):
         os.chdir(self.workspace)
@@ -34,6 +79,7 @@ class Pipeline:
             print(f"Clone repository: {url} {name}")
             repo = Repo.clone_from(url, name)
             self.workspace = os.path.join(self.workspace, name)
+            print("Chdir to current pipeline workspace: " + self.workspace)
             os.chdir(self.workspace)
             self.pipeline_subst["commit_hash"] = repo.head.object.hexsha
             self.pipeline_subst["commit_message"] = repo.head.object.message
@@ -63,37 +109,6 @@ class Pipeline:
                                                               {"success_info": self.success_info}))
             if self.core.is_debug_mode():
                 print(f"Success info: {self.success_info}")
-
-    def parse_steps(self, list_of_step_records):
-        steps = []
-        for step_record in list_of_step_records:
-            name = step_record["name"]
-            if "run" in step_record:
-                run = step_record["run"]
-                steps.append(RunStep(core=self.core,
-                                     name=name,
-                                     run=run,
-                                     pipeline=self))
-            elif "run_pipeline" in step_record:
-                pipeline_name = step_record["run_pipeline"]
-                success_info_action = step_record.get("success_info", "ignore")
-                steps.append(PipelineStep(core=self.core,
-                                          name=name,
-                                          pipeline_name=pipeline_name,
-                                          pipeline=self,
-                                          success_info_action=success_info_action))
-            elif "set_variable" in step_record:
-                variable_name = step_record["set_variable"]
-                run_script = step_record["script"]
-                steps.append(SetVariableStep(core=self.core,
-                                             name=name,
-                                             variable_name=variable_name,
-                                             run_lines=run_script.split("\n"),
-                                             pipeline=self))
-            else:
-                raise Exception("Invalid step record: " + str(step_record))
-
-        return steps
 
     def set_variable(self, variable_name, variable_value):
         self.pipeline_subst[variable_name] = variable_value
