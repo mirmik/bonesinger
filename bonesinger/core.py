@@ -107,7 +107,7 @@ class Core:
         raise Exception("Pipeline template not found: " + name)
 
     def create_build_directory_and_change_it(self):
-        temporary_directory = self.core.make_temporary_directory()
+        temporary_directory = self.make_temporary_directory()
         os.chdir(temporary_directory)
         self.workspace = temporary_directory
 
