@@ -48,6 +48,10 @@ class Pipeline:
             gitname = git.get("name", None)
             gitdata = {"url": giturl, "branch": gitbranch,
                        "commit": gitcommit, "name": gitname}
+            if success_info is None:
+                success_info = ("Pipeline {pipeline_name} has been successfully executed.\n" +
+                                "Commit hash: {commit_hash}\n" +
+                                "Commit message: {commit_message}\n")
             #workspace = os.path.join(workspace, name)
 
         if "use_template" in record:
