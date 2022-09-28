@@ -109,7 +109,7 @@ class Core:
     def create_build_directory_and_change_it(self):
         print("Create core workspace")
         temporary_directory = self.executor.make_temporary_directory()
-        os.chdir(temporary_directory)
+        self.executor.change_directory(temporary_directory)
         self.workspace = temporary_directory
 
     def execute_entrypoint(self, entrypoint: str):
