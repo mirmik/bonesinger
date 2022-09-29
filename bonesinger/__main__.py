@@ -1,5 +1,6 @@
-from .parser import parse_yaml
+from .parser import parse_yaml_url, get_url_content, parse_yaml_content
 from .executors import NativeExecutor, DockerExecutor
+from .docker import make_docker_image
 import argparse
 import threading
 import os
@@ -55,6 +56,28 @@ def set_cancel_token():
     CANCEL_TOKEN = True
 
 
+def get_dictionaries(pathes):
+    dicts = []
+    for path in pathes:
+        content = get_url_content(path)
+        dct = parse_yaml_content(content)
+        if dct is not None:
+            if "include" in dct:
+                for include in dct["include"]:
+                    dicts.extend(get_dictionaries([include]))
+
+            dicts.append(dct)
+
+        # lines of content
+        lines = content.splitlines()
+        for l in lines:
+            if l.startswith("#!include"):
+                include_url = l[len("#!include"):].strip()
+                print("Include:", include_url)
+                dicts.extend(get_dictionaries([include_url]))
+    return dicts
+
+
 def main():
     parser = argparse.ArgumentParser(description='bonesinger')
     # add multiple arguments
@@ -71,7 +94,14 @@ def main():
 
     filepathes = args.scripts
     dct = {}
-    dct = merge_dicts_and_lists(*[parse_yaml(fpath) for fpath in filepathes])
+
+    script_dictionaries = get_dictionaries(filepathes)
+    dct = merge_dicts_and_lists(*script_dictionaries)
+
+    if "docker" in dct:
+        if "script" in dct["docker"]:
+            make_docker_image(dct["docker"]["script"], name=dct["docker"]["name"])
+            args.docker = dct["docker"]["name"]
 
     if args.debug:
         pp = pprint.PrettyPrinter(indent=4)

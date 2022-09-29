@@ -134,6 +134,8 @@ class Core:
 
             self.on_success(pipeline, matrix_value)
 
+        self.executor.finish_executor()
+
     def on_success(self, pipeline, matrix_value):
         if self.security_options["hide_links"]:
             pipeline.success_info = sanitize_url(pipeline.success_info)

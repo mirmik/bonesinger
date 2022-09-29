@@ -1,3 +1,11 @@
+#!include https://github.com/mirmik/zippo/blob/master/zippo.yml
+
+docker:
+  name: testenv
+  script: |
+    FROM ubuntu:18.04
+    RUN sudo apt-get update
+
 pipeline:
   - name: all
     steps:

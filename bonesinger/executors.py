@@ -1,6 +1,7 @@
 from .docker import (
     start_docker_container,
     exec_in_docker_container,
+    stop_docker_container,
     upload_file_to_docker_container)
 import abc
 import time
@@ -23,6 +24,10 @@ class StepExecutor:
 
     @abc.abstractmethod
     def upload_temporary_file(self, path):
+        pass
+
+    @abc.abstractmethod
+    def finish_executor(self):
         pass
 
     @abc.abstractmethod
@@ -162,6 +167,9 @@ class NativeExecutor(StepExecutor):
 
         return {"commit": commit, "message": message}
 
+    def finish_executor(self):
+        pass
+
 
 class DockerExecutor(StepExecutor):
     def __init__(self, image, script_executor, addfiles=[]):
@@ -209,3 +217,6 @@ class DockerExecutor(StepExecutor):
         message = exec_in_docker_container(self.container_name, f"git -C {basepath}/{name} log -1 --pretty=%B")
 
         return {"commit": commit, "message": message}
+
+    def finish_executor(self):
+        stop_docker_container(self.container_name)
