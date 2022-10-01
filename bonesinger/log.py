@@ -33,10 +33,10 @@ class Logger:
         strargs = [str(arg) for arg in args]
         print(*strargs)
         self.file.write(" ".join(strargs) + "\n")
-        self.file.flush()
 
     def close_log(self):
         print("Close logfile")
+        self.file.flush()
         self.file.close()
 
     @staticmethod
