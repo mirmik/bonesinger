@@ -9,6 +9,7 @@ from .core import Core
 from .util import merge_dicts_and_lists, merge_dicts
 from .log import Logger
 import signal
+import pkg_resources
 
 CANCEL_TOKEN = False
 
@@ -165,7 +166,15 @@ def main():
                         help='Docker image to use', default=None)
     parser.add_argument('-n', '--step', help='step name',
                         default="", required=False)
+    parser.add_argument('--version', action='store_true', help='Show version')
     args = parser.parse_args()
+
+    # get current package version
+    if args.version:
+        __version__ = pkg_resources.require("bonesinger")[0].version
+        print("bonesinger version:", __version__)
+
+        exit(0)
 
     logger = Logger.instance()
     logger.init(directory=None)
