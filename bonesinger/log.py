@@ -20,6 +20,7 @@ class Logger:
         return f"log-{date}.txt"
 
     def create_logfile(self, directory, name):
+        print("Create logfile", directory, name)
         if not os.path.exists(directory):
             os.makedirs(directory)
         path = os.path.join(directory, name)
