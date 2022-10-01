@@ -1,5 +1,6 @@
 import os
 import datetime
+import time
 
 
 class Logger:
@@ -12,6 +13,7 @@ class Logger:
         self.directory = os.path.expanduser(directory)
         self.logname = self.generate_logfile_name()
         self.file = self.create_logfile(self.directory, self.logname)
+        self.lastflush = time.time()
 
     def generate_logfile_name(self):
         date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
@@ -33,6 +35,10 @@ class Logger:
         strargs = [str(arg) for arg in args]
         print(*strargs)
         self.file.write(" ".join(strargs) + "\n")
+
+        if time.time() - self.lastflush > 5:
+            self.file.flush()
+            self.lastflush = time.time()
 
     def close_log(self):
         print("Close logfile")
