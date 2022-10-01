@@ -5,7 +5,7 @@ import time
 
 class Logger:
     _instance = None
-    _default_log_directory = "~/.bonesinger-log/"
+    _default_log_directory = os.path.expanduser("~/.bonesinger-log/")
 
     def init(self, directory=None):
         if directory is None:
