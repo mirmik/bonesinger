@@ -7,6 +7,8 @@ import os
 import pprint
 from .core import Core
 from .util import merge_dicts_and_lists, merge_dicts
+from .log import Logger
+import signal
 
 CANCEL_TOKEN = False
 
@@ -78,19 +80,8 @@ def get_dictionaries(pathes):
     return dicts
 
 
-def main():
-    parser = argparse.ArgumentParser(description='bonesinger')
-    # add multiple arguments
-    parser.add_argument('scripts', nargs='*', type=str, help='Path to script')
-    parser.add_argument('--entrance', type=str, help='Pipeline to execute')
-    parser.add_argument('--debug', action='store_true', help='Debug mode')
-    parser.add_argument('--docker', type=str,
-                        help='Docker image to use', default=None)
-    parser.add_argument('-n', '--step', help='step name',
-                        default="", required=False)
-    args = parser.parse_args()
-
-    print("Start script:", args.scripts)
+def doit(logger, args):
+    logger.print("Start script:", args.scripts)
 
     filepathes = args.scripts
     dct = {}
@@ -149,12 +140,48 @@ def main():
 
     if args.entrance is not None:
         if args.debug:
-            print("Entrance:", args.entrance)
+            logger.print("Entrance:", args.entrance)
         core.execute_entrypoint(args.entrance)
     elif len(dct["pipeline"]) == 1:
         core.execute_entrypoint(dct["pipeline"][0]["name"])
     else:
-        print("Entrance is not specified. Use --entrance to specify it.")
+        logger.print("Entrance is not specified. Use --entrance to specify it.")
+
+
+def sigint_handler(signum, frame):
+    Logger.instance().print("SIGINT received. Canceling...")
+    Logger.instance().close_log()
+    exit(-1)
+
+
+def main():
+    parser = argparse.ArgumentParser(description='bonesinger')
+    # add multiple arguments
+    parser.add_argument('scripts', nargs='*', type=str, help='Path to script')
+    parser.add_argument('--entrance', type=str, help='Pipeline to execute')
+    parser.add_argument('--debug', action='store_true', help='Debug mode')
+    parser.add_argument('--lastlog', action='store_true', help='Show last log')
+    parser.add_argument('--docker', type=str,
+                        help='Docker image to use', default=None)
+    parser.add_argument('-n', '--step', help='step name',
+                        default="", required=False)
+    args = parser.parse_args()
+
+    logger = Logger.instance()
+    logger.init(directory=None)
+
+    signal.signal(signal.SIGINT, sigint_handler)
+
+    if args.lastlog:
+        logger.print_last_log()
+        return
+
+    if len(args.scripts) == 0:
+        logger.print("No script given.")
+    else:
+        doit(logger, args)
+
+    logger.close_log()
 
 
 if __name__ == "__main__":

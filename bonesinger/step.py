@@ -2,6 +2,7 @@
 import json
 from .executors import StepExecutor
 from .util import merge_dicts
+from .log import Logger
 
 
 class obj:

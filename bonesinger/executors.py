@@ -10,7 +10,9 @@ import fcntl
 import sys
 import os
 from .util import strong_key_format, generate_random_string
-import tempfile
+from .log import Logger
+
+logger = Logger.instance()
 
 
 class StepExecutor:
@@ -55,12 +57,12 @@ class StepExecutor:
                        subst_dict,
                        prefix,
                        debug):
-        print(
+        logger.print(
             f"###PIPELINE: {pipeline_name}, STEP: {script_name}, VARIABLES: {subst_dict}")
 
         if debug:
-            print("###DEBUG: " + str(prefix))
-            print("###DEBUG: " + str(script_lines))
+            logger.print("###DEBUG: " + str(prefix))
+            logger.print("###DEBUG: " + str(script_lines))
 
         # gererate random name for temporary file
         tmp_file = f"/tmp/{pipeline_name}_{script_name}_{time.time()}.tmp"
@@ -74,8 +76,8 @@ class StepExecutor:
             text += line + "\n"
 
         if debug:
-            print("Script:")
-            print(text)
+            logger.print("Script:")
+            logger.print(text)
 
         with open(tmp_file, "w") as f:
             f.write(text)
@@ -84,13 +86,11 @@ class StepExecutor:
 
         # run tmp/script.sh and listen stdout and stderr
         proc = subprocess.Popen(self.run_script_cmd(tmp_file), shell=True,
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
         # set non-blocking output
         fcntl.fcntl(proc.stdout, fcntl.F_SETFL, fcntl.fcntl(
             proc.stdout, fcntl.F_GETFL) | os.O_NONBLOCK)
-        fcntl.fcntl(proc.stderr, fcntl.F_SETFL, fcntl.fcntl(
-            proc.stderr, fcntl.F_GETFL) | os.O_NONBLOCK)
 
         output = ""
         while True:
@@ -98,17 +98,8 @@ class StepExecutor:
             try:
                 line = proc.stdout.read()
                 if line:
-                    print(line.decode("utf-8").strip())
+                    logger.print(line.decode("utf-8").strip())
                     output += line.decode("utf-8")
-            except Exception as e:
-                print(e)
-                pass
-
-            # read stderr
-            try:
-                line = proc.stderr.read()
-                if line:
-                    print(line.decode("utf-8").strip())
             except Exception as e:
                 print(e)
                 pass
@@ -123,7 +114,7 @@ class StepExecutor:
             time.sleep(0.1)
 
         # print exit code
-        print(f"Exit code: {proc.returncode}")
+        logger.print(f"Exit code: {proc.returncode}")
         if proc.returncode != 0:
             raise Exception(f"{pipeline_name}:{script_name}: exit code: {proc.returncode}")
 
@@ -199,7 +190,7 @@ class DockerExecutor(StepExecutor):
         self.current_directory = path
 
     def create_directory(self, path):
-        print("DockerExecutor.create_directory: " + path)
+        logger.print("DockerExecutor.create_directory: " + path)
         exec_in_docker_container(self.container_name, f"mkdir -p {path}")
 
     def clone_repository(self, url, name, basepath, branch=None):
@@ -208,7 +199,7 @@ class DockerExecutor(StepExecutor):
         else:
             cmd = f"git clone {url} {basepath}/{name} --recursive"
         out = exec_in_docker_container(self.container_name, cmd)
-        print("Clone output:", out)
+        logger.print("Clone output:", out)
 
         # get commit hash to commit variable
         commit = exec_in_docker_container(self.container_name, f"git -C {basepath}/{name} rev-parse HEAD")

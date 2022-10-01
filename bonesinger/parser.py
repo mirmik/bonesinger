@@ -1,4 +1,7 @@
 import yaml
+from .log import Logger
+
+logger = Logger.instance()
 
 
 def parse_yaml(file):
@@ -15,7 +18,7 @@ def parse_yaml_url(url):
     if url.startswith('http'):
         import requests
         r = requests.get(url)
-        print(f"download content from url: {url}:\n{r.text}")
+        logger.print(f"download content from url: {url}:\n{r.text}")
         return yaml.load(r.text)
     else:
         return parse_yaml(url)

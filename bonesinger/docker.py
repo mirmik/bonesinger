@@ -4,6 +4,9 @@ import fcntl
 import sys
 import os
 import tempfile
+from .log import Logger
+
+logger = Logger.instance()
 
 
 def start_docker_container(image, cmd):
@@ -43,7 +46,7 @@ def make_docker_image(content, name):
     temporary_dockerfile.write(content)
     temporary_dockerfile.close()
 
-    print(f"Build docker image '{name}' from Dockerfile: " + temporary_dockerfile.name)
+    logger.print(f"Build docker image '{name}' from Dockerfile: " + temporary_dockerfile.name)
 
     cmd = f"docker build -t {name} -f {temporary_dockerfile.name} ."
     proc = subprocess.Popen(cmd, shell=True,
@@ -65,7 +68,7 @@ def make_docker_image(content, name):
                 print(line.decode("utf-8").strip())
         #        output += line.decode("utf-8")
         except Exception as e:
-            print(e)
+            logger.print(e)
             pass
 
         sys.stdout.flush()

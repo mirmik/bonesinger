@@ -6,6 +6,9 @@ import tempfile
 import os
 from git import Repo
 import traceback
+from .log import Logger
+
+logger = Logger.instance()
 
 
 def matrix_iterator(matrix):
@@ -107,7 +110,7 @@ class Core:
         raise Exception("Pipeline template not found: " + name)
 
     def create_build_directory_and_change_it(self):
-        print("Create core workspace")
+        logger.print("Create core workspace")
         temporary_directory = self.executor.make_temporary_directory()
         self.executor.chdir(temporary_directory)
         self.workspace = temporary_directory
@@ -118,7 +121,7 @@ class Core:
         for matrix_value in matrix_iterator(self.matrix):
             try:
                 if self.debug:
-                    print(
+                    logger.print(
                         f"Execute pipeline {pipeline.name} for matrix value: {matrix_value}")
                 pipeline.execute(executor=self.executor,
                                  matrix_value=matrix_value,
@@ -126,9 +129,9 @@ class Core:
                                  subst={})
             except Exception as e:
                 current_directory = os.getcwd()
-                print("Exception: " + str(e))
-                print("Location: " + current_directory)
-                print("Traceback: " + traceback.format_exc())
+                logger.print("Exception: " + str(e))
+                logger.print("Location: " + current_directory)
+                logger.print("Traceback: " + traceback.format_exc())
                 self.on_failure(pipeline, matrix_value, e)
                 break
 
@@ -141,9 +144,9 @@ class Core:
             pipeline.success_info = sanitize_url(pipeline.success_info)
 
         if self.debug:
-            print("Success: " + pipeline.name)
-            print("Matrix value: " + str(matrix_value))
-            print("Success info: " + str(pipeline.success_info))
+            logger.print("Success: " + pipeline.name)
+            logger.print("Matrix value: " + str(matrix_value))
+            logger.print("Success info: " + str(pipeline.success_info))
         for task in self.on_success_script:
             task.execute(pipeline_name=pipeline.name,
                          executor=self.executor,

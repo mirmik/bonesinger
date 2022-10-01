@@ -4,6 +4,9 @@ from .util import merge_dicts
 import os
 import tempfile
 from git import Repo
+from .log import Logger
+
+logger = Logger.instance()
 
 
 class Pipeline:
@@ -82,8 +85,8 @@ class Pipeline:
             url = self.gitdata["url"]
             name = self.gitdata["name"]
             branch = self.gitdata.get("branch", None)
-            print(self.gitdata)
-            print(f"Clone repository: {url} {name}")
+            logger.print(self.gitdata)
+            logger.print(f"Clone repository: {url} {name}")
             info = self.core.executor.clone_repository(url, name, basepath=self.workspace, branch=branch)
             self.workspace = os.path.join(self.workspace, name)
             self.core.executor.chdir(self.workspace)
@@ -91,15 +94,15 @@ class Pipeline:
             self.pipeline_subst["commit_message"] = info["message"]
 
         if self.core.is_debug_mode():
-            print("Executing pipeline " + self.name)
+            logger.print("Executing pipeline " + self.name)
             for step in self.steps:
-                print("  " + str(step))
+                logger.print("  " + str(step))
         for step in self.steps:
             if self.core.is_debug_mode():
-                print(
+                logger.print(
                     f"Execute step {step.name} for matrix value: {matrix_value}")
             try:
-                print("Chdir to workspace of current pipeline: " + self.workspace)
+                logger.print("Chdir to workspace of current pipeline: " + self.workspace)
                 self.core.executor.chdir(self.workspace)
                 step.execute(pipeline_name=self.name,
                              executor=executor,
@@ -107,7 +110,7 @@ class Pipeline:
                              prefix=prefix,
                              subst=merge_dicts(self.pipeline_subst, subst))
             except Exception as e:
-                print(f"Error in step {step.name}: {e}")
+                logger.print(f"Error in step {step.name}: {e}")
                 raise e
 
         if self.success_info_template is not None:
@@ -116,7 +119,7 @@ class Pipeline:
                                                               matrix_value,
                                                               {"success_info": self.success_info}))
             if self.core.is_debug_mode():
-                print(f"Success info: {self.success_info}")
+                logger.print(f"Success info: {self.success_info}")
 
     def set_variable(self, variable_name, variable_value):
         self.pipeline_subst[variable_name] = variable_value
