@@ -5,10 +5,11 @@ import time
 
 class Logger:
     _instance = None
+    _default_log_directory = "~/.bonesinger-log/"
 
     def init(self, directory=None):
         if directory is None:
-            directory = "~/.bonesinger-log/"
+            directory = Logger._default_log_directory
 
         self.directory = os.path.expanduser(directory)
         self.logname = self.generate_logfile_name()
@@ -53,13 +54,16 @@ class Logger:
             Logger._instance = Logger()
         return Logger._instance
 
-    def print_last_log(self):
+    @staticmethod
+    def print_last_log(directory=None):
+        if directory is None:
+            directory = Logger._default_log_directory
         # get last modified file in directory
-        files = os.listdir(self.directory)
-        files.sort(key=lambda x: os.path.getmtime(os.path.join(self.directory, x)))
+        files = os.listdir(directory)
+        files.sort(key=lambda x: os.path.getmtime(os.path.join(directory, x)))
 
         print("Last log:", files[-1])
 
         # print the last file
-        with open(os.path.join(self.directory, files[-1]), 'r') as f:
+        with open(os.path.join(directory, files[-1]), 'r') as f:
             print(f.read())

@@ -181,14 +181,14 @@ def main():
 
         exit(0)
 
+    if args.lastlog:
+        Logger.print_last_log()
+        return
+
     logger = Logger.instance()
     logger.init(directory=None)
 
     signal.signal(signal.SIGINT, sigint_handler)
-
-    if args.lastlog:
-        logger.print_last_log()
-        return
 
     if len(args.scripts) == 0:
         logger.print("No script given.")
