@@ -169,9 +169,14 @@ def main():
     parser.add_argument('--version', action='store_true', help='Show version')
     args = parser.parse_args()
 
+    __version__ = "undefined"
+    try:
+        __version__ = pkg_resources.require("bonesinger")[0].version
+    except:
+        pass
+
     # get current package version
     if args.version:
-        __version__ = pkg_resources.require("bonesinger")[0].version
         print("bonesinger version:", __version__)
 
         exit(0)
@@ -188,6 +193,7 @@ def main():
     if len(args.scripts) == 0:
         logger.print("No script given.")
     else:
+        logger.print("bonesinger version:", __version__)
         doit(logger, args)
 
     logger.close_log()
