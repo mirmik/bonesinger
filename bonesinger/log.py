@@ -37,6 +37,7 @@ class Logger:
         self.file.write(" ".join(strargs) + "\n")
 
         if time.time() - self.lastflush > 5:
+            print("Flush logfile")
             self.file.flush()
             self.lastflush = time.time()
 
