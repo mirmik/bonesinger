@@ -65,7 +65,8 @@ class StepExecutor:
             logger.print("###DEBUG: " + str(script_lines))
 
         # gererate random name for temporary file
-        tmp_file = f"/tmp/{pipeline_name}_{script_name}_{time.time()}.tmp"
+        script_name_r = script_name.replace(" ", "_")
+        tmp_file = f"/tmp/{pipeline_name}_{script_name_r}_{time.time()}.tmp"
 
         text = f"#!{self.script_executor}\n"
         text += "set -ex\n"
@@ -163,15 +164,17 @@ class NativeExecutor(StepExecutor):
 
 
 class DockerExecutor(StepExecutor):
-    def __init__(self, image, script_executor, addfiles=[]):
+    def __init__(self, image, script_executor, addfiles=[], additional_options=""):
         self.image = image
         self.container_name = None
+        self.docker_additional_options = additional_options
         self.init_executor(script_executor, addfiles)
         self.current_directory = None
 
     def init_executor(self, script_executor, addfiles):
         self.script_executor = script_executor
-        self.container_name = start_docker_container(self.image, script_executor)
+        self.container_name = start_docker_container(self.image, script_executor, 
+                                                     self.docker_additional_options)
 
         for addfile in addfiles:
             upload_file_to_docker_container(self.container_name, addfile["src"], addfile["dst"])

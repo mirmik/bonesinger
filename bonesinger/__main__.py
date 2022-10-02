@@ -107,7 +107,8 @@ def doit(logger, args):
     executor = NativeExecutor(script_executor=script_executor)
     if args.docker is not None:
         executor = DockerExecutor(image=args.docker,
-                                  script_executor=script_executor)
+                                  script_executor=script_executor,
+                                  additional_options=args.docker_opts)
 
     if "matrix" in dct:
         matrix = dct["matrix"]
@@ -164,6 +165,8 @@ def main():
     parser.add_argument('--lastlog', action='store_true', help='Show last log')
     parser.add_argument('--docker', type=str,
                         help='Docker image to use', default=None)
+    parser.add_argument('--docker_opts', type=str,
+                        help='Docker image to use', default="")
     parser.add_argument('-n', '--step', help='step name',
                         default="", required=False)
     parser.add_argument('--version', action='store_true', help='Show version')

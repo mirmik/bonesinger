@@ -9,10 +9,11 @@ from .log import Logger
 logger = Logger.instance()
 
 
-def start_docker_container(image, cmd):
+def start_docker_container(image, cmd, additional_options=""):
     print(f"Starting docker container {image}")
     random_name = f"{time.time()}"
-    cmd = f"docker run -it -d --name {random_name} {image} {cmd}"
+    cmd = f"docker run {additional_options} -it -d --name {random_name} {image} {cmd}"
+    print("Start cmd: ",cmd)
     subprocess.run(cmd, shell=True)
     return random_name
 
