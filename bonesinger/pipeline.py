@@ -9,25 +9,27 @@ import asyncio
 
 logger = Logger.instance()
 
+class PipelineTimeoutException(Exception):
+    pass
 
 class Pipeline:
     def __init__(self,
                  core,
                  name: str,
                  step_records: list,
-                 watchdog: int,
                  success_info: str,
                  workspace: str,
-                 gitdata: dict):
+                 gitdata: dict,
+                 watchdog : int):
         self.name = name
         self.core = core
         self.steps = self.parse_steps(step_records, core)
-        self.watchdog = watchdog
         self.pipeline_subst = {"pipeline_name": name}
         self.success_info_template = success_info
         self.success_info = ""
         self.workspace = workspace
         self.gitdata = gitdata
+        self.watchdog = watchdog
 
     def parse_steps(self, step_records, core):
         return [Step.from_record(record, pipeline=self, core=core) for record in step_records]
@@ -35,9 +37,9 @@ class Pipeline:
     @staticmethod
     def from_record(record, core):
         name = record["name"]
-        watchdog = record.get("watchdog", 0)
         success_info = record.get("success_info", None)
         workspace = record.get("workspace", None)
+        watchdog = record.get("watchdog", None)
 
         gitdata = None
         if workspace is None:
@@ -73,10 +75,10 @@ class Pipeline:
                 core=core,
                 name=name,
                 step_records=record["steps"],
-                watchdog=watchdog,
                 success_info=success_info,
                 workspace=workspace,
-                gitdata=gitdata)
+                gitdata=gitdata,
+                watchdog=watchdog)
 
     async def execute(self, executor, matrix_value, prefix, subst):
         self.core.executor.chdir(self.workspace)
@@ -98,6 +100,30 @@ class Pipeline:
             logger.print("Executing pipeline " + self.name)
             for step in self.steps:
                 logger.print("  " + str(step))
+        
+        task = asyncio.create_task(self.execute_do(executor=executor,
+                         matrix_value=matrix_value,
+                         prefix=prefix,
+                         subst=subst))
+
+        try:
+            await asyncio.wait_for(task, self.watchdog)
+        except asyncio.TimeoutError:
+            logger.print("Pipeline execution has been timed out")
+            raise PipelineTimeoutException()
+
+        if self.success_info_template is not None:
+            self.success_info = strong_key_format(self.success_info_template,
+                                                  merge_dicts(self.pipeline_subst,
+                                                              matrix_value,
+                                                              {"success_info": self.success_info}))
+            if self.core.is_debug_mode():
+                logger.print(f"Success info: {self.success_info}")
+
+    def set_variable(self, variable_name, variable_value):
+        self.pipeline_subst[variable_name] = variable_value
+
+    async def execute_do(self, executor, matrix_value, prefix, subst):
         for step in self.steps:
             if self.core.is_debug_mode():
                 logger.print(
@@ -113,14 +139,3 @@ class Pipeline:
             except Exception as e:
                 logger.print(f"Error in step {step.name}: {e}")
                 raise e
-
-        if self.success_info_template is not None:
-            self.success_info = strong_key_format(self.success_info_template,
-                                                  merge_dicts(self.pipeline_subst,
-                                                              matrix_value,
-                                                              {"success_info": self.success_info}))
-            if self.core.is_debug_mode():
-                logger.print(f"Success info: {self.success_info}")
-
-    def set_variable(self, variable_name, variable_value):
-        self.pipeline_subst[variable_name] = variable_value

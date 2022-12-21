@@ -1,6 +1,6 @@
 from .executors import StepExecutor
 from .step import RunStep
-from .pipeline import Pipeline
+from .pipeline import Pipeline, PipelineTimeoutException
 from .util import strong_key_format, merge_dicts
 import tempfile
 import os
@@ -140,6 +140,12 @@ class Core:
                 logger.print("Traceback: " + traceback.format_exc())
                 await self.on_failure(pipeline, matrix_value, f"Global timeout exceeded ({self.timeout}s)")
                 break
+            except PipelineTimeoutException as e:
+                current_directory = os.getcwd()
+                logger.print("Timeout")
+                logger.print("Location: " + current_directory)
+                logger.print("Traceback: " + traceback.format_exc())
+                await self.on_failure(pipeline, matrix_value, e)
             except Exception as e:
                 current_directory = os.getcwd()
                 logger.print("Exception: " + str(e))
