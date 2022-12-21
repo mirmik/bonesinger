@@ -62,12 +62,12 @@ class PipelineStep(Step):
         self.pipeline = pipeline
         self.success_info_action = success_info_action
 
-    def execute(self, pipeline_name, executor: StepExecutor, matrix, prefix, subst: dict = {}):
+    async def execute(self, pipeline_name, executor: StepExecutor, matrix, prefix, subst: dict = {}):
         if self.core.is_debug_mode():
             print("Execute PipelineStep: " + self.name)
 
         pipeline = self.core.find_pipeline(self.pipeline_name)
-        pipeline.execute(executor=executor,
+        await pipeline.execute(executor=executor,
                          matrix_value=matrix,
                          prefix=prefix,
                          subst=subst)
@@ -89,7 +89,7 @@ class SetVariableStep(Step):
         self.pipeline = pipeline
         self.run_lines = run_lines
 
-    def execute(self, pipeline_name, executor: StepExecutor, matrix, prefix, subst: dict = {}):
+    async def execute(self, pipeline_name, executor: StepExecutor, matrix, prefix, subst: dict = {}):
         if self.core.is_debug_mode():
             print("Execute SetVariableStep: " + self.name)
         output = executor.execute_script(
@@ -115,7 +115,7 @@ class RunStep(Step):
     def __str__(self):
         return f"Task({self.name})"
 
-    def execute(self,
+    async def execute(self,
                 pipeline_name: str,
                 executor: StepExecutor,
                 matrix: dict,
@@ -123,7 +123,7 @@ class RunStep(Step):
                 subst: dict = {}):
         if self.core.is_debug_mode():
             print("Execute RunStep: " + self.name)
-        executor.execute_script(
+        await executor.execute_script(
             script_lines=self.run_lines,
             pipeline_name=pipeline_name,
             subst_dict=merge_dicts(subst, matrix),

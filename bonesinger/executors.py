@@ -11,6 +11,7 @@ import sys
 import os
 from .util import strong_key_format, generate_random_string
 from .log import Logger
+import asyncio
 
 logger = Logger.instance()
 
@@ -50,7 +51,7 @@ class StepExecutor:
     def clone_repository(self, url, name, basepath, branch=None):
         pass
 
-    def execute_script(self,
+    async def execute_script(self,
                        script_lines,
                        pipeline_name,
                        script_name,
@@ -112,7 +113,7 @@ class StepExecutor:
                 break
 
             # sleep for 0.1 second
-            time.sleep(0.1)
+            await asyncio.sleep(0.1)
 
         # print exit code
         logger.print(f"Exit code: {proc.returncode}")

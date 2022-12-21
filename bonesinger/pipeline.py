@@ -5,6 +5,7 @@ import os
 import tempfile
 from git import Repo
 from .log import Logger
+import asyncio
 
 logger = Logger.instance()
 
@@ -77,7 +78,7 @@ class Pipeline:
                 workspace=workspace,
                 gitdata=gitdata)
 
-    def execute(self, executor, matrix_value, prefix, subst):
+    async def execute(self, executor, matrix_value, prefix, subst):
         self.core.executor.chdir(self.workspace)
 
         # clone repository if pipeline has git section
@@ -104,7 +105,7 @@ class Pipeline:
             try:
                 logger.print("Chdir to workspace of current pipeline: " + self.workspace)
                 self.core.executor.chdir(self.workspace)
-                step.execute(pipeline_name=self.name,
+                await step.execute(pipeline_name=self.name,
                              executor=executor,
                              matrix=matrix_value,
                              prefix=prefix,

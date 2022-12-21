@@ -10,54 +10,7 @@ from .util import merge_dicts_and_lists, merge_dicts
 from .log import Logger
 import signal
 import pkg_resources
-
-CANCEL_TOKEN = False
-
-
-def do_step(pipeline_name,
-            task,
-            executor,
-            matrix,
-            prefix):
-    try:
-        task.execute(pipeline_name=pipeline_name,
-                     executor=executor,
-                     matrix=matrix,
-                     prefix=prefix)
-    except Exception as e:
-        print(f"Step {task.name} failed: {e}")
-        return False
-    return True, ""
-
-
-def start_watchdog(time_in_seconds):
-    def run_watchdog(pid):
-        import time
-        import os
-        import signal
-
-        start_time = time.time()
-        while True:
-            if CANCEL_TOKEN:
-                return
-            if time.time() - start_time > time_in_seconds:
-                os.kill(pid, signal.SIGKILL)
-                break
-            time.sleep(1)
-
-        print(
-            "**********************\nScript finished by Watchdog.\n**********************")
-        os.kill(pid, signal.SIGKILL)
-
-    pid = os.getpid()
-    t = threading.Thread(target=run_watchdog, args=(pid,))
-    t.start()
-
-
-def set_cancel_token():
-    global CANCEL_TOKEN
-    CANCEL_TOKEN = True
-
+import asyncio
 
 def get_dictionaries(pathes):
     dicts = []
@@ -81,7 +34,8 @@ def get_dictionaries(pathes):
     return dicts
 
 
-def doit(logger, args):
+async def doit(logger, args):
+    print("DOIT")
     logger.print("Start script:", args.scripts)
 
     filepathes = args.scripts
@@ -115,6 +69,11 @@ def doit(logger, args):
     else:
         matrix = {}
 
+    if "watchdog" in dct:
+        timeout = dct["watchdog"]
+    else:
+        timeout = 0
+
     if "prefix" in dct:
         prefix = "\n".join(dct["prefix"])
     else:
@@ -138,14 +97,15 @@ def doit(logger, args):
                 on_success_records=dct.get("on_success", None),
                 on_failure_records=dct.get("on_failure", None),
                 pipeline_template=pipeline_template,
-                security_options={"hide_links": hide_links})
+                security_options={"hide_links": hide_links},
+                timeout=timeout,)
 
     if args.entrance is not None:
         if args.debug:
             logger.print("Entrance:", args.entrance)
-        core.execute_entrypoint(args.entrance)
+        await core.execute_entrypoint(args.entrance)
     elif len(dct["pipeline"]) == 1:
-        core.execute_entrypoint(dct["pipeline"][0]["name"])
+        await core.execute_entrypoint(dct["pipeline"][0]["name"])
     else:
         logger.print("Entrance is not specified. Use --entrance to specify it.")
 
@@ -155,8 +115,7 @@ def sigint_handler(signum, frame):
     Logger.instance().close_log()
     exit(-1)
 
-
-def main():
+async def async_main():
     parser = argparse.ArgumentParser(description='bonesinger')
     # add multiple arguments
     parser.add_argument('scripts', nargs='*', type=str, help='Path to script')
@@ -197,10 +156,12 @@ def main():
         logger.print("No script given.")
     else:
         logger.print("bonesinger version:", __version__)
-        doit(logger, args)
+        await doit(logger, args)
 
     logger.close_log()
 
+def main():
+    asyncio.run(async_main())
 
 if __name__ == "__main__":
     main()

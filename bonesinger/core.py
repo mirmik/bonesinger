@@ -7,6 +7,7 @@ import os
 from git import Repo
 import traceback
 from .log import Logger
+import asyncio
 
 logger = Logger.instance()
 
@@ -47,7 +48,8 @@ class Core:
                  on_success_records: dict,
                  on_failure_records: dict,
                  pipeline_template: list,
-                 security_options: dict):
+                 security_options: dict,
+                 timeout: int):
         self.pipeline_template = pipeline_template
         self.executor = executor
         self.matrix = matrix
@@ -57,6 +59,7 @@ class Core:
         self.on_success_script = self.make_task_list(on_success_records)
         self.on_failure_script = self.make_task_list(on_failure_records)
         self.security_options = security_options
+        self.timeout = timeout
 
     def make_task_list(self, records) -> list:
         """make list of Step objects from records"""
@@ -115,7 +118,7 @@ class Core:
         self.executor.chdir(temporary_directory)
         self.workspace = temporary_directory
 
-    def execute_entrypoint(self, entrypoint: str):
+    async def execute_entrypoint(self, entrypoint: str):
         self.create_build_directory_and_change_it()
         pipeline = self.find_pipeline(entrypoint)
         for matrix_value in matrix_iterator(self.matrix):
@@ -123,23 +126,33 @@ class Core:
                 if self.debug:
                     logger.print(
                         f"Execute pipeline {pipeline.name} for matrix value: {matrix_value}")
-                pipeline.execute(executor=self.executor,
-                                 matrix_value=matrix_value,
-                                 prefix=self.prefix,
-                                 subst={})
+                
+                task = asyncio.create_task(pipeline.execute(executor=self.executor,
+                    matrix_value=matrix_value,
+                    prefix=self.prefix,
+                    subst={}))
+
+                await asyncio.wait_for(task, timeout=self.timeout)
+            except asyncio.TimeoutError:            
+                current_directory = os.getcwd()
+                logger.print("Timeout")
+                logger.print("Location: " + current_directory)
+                logger.print("Traceback: " + traceback.format_exc())
+                await self.on_failure(pipeline, matrix_value, f"Global timeout exceeded ({self.timeout}s)")
+                break
             except Exception as e:
                 current_directory = os.getcwd()
                 logger.print("Exception: " + str(e))
                 logger.print("Location: " + current_directory)
                 logger.print("Traceback: " + traceback.format_exc())
-                self.on_failure(pipeline, matrix_value, e)
+                await self.on_failure(pipeline, matrix_value, e)
                 break
 
-            self.on_success(pipeline, matrix_value)
+            await self.on_success(pipeline, matrix_value)
 
         self.executor.finish_executor()
 
-    def on_success(self, pipeline, matrix_value):
+    async def on_success(self, pipeline, matrix_value):
         if self.security_options["hide_links"]:
             pipeline.success_info = sanitize_url(pipeline.success_info)
 
@@ -148,7 +161,7 @@ class Core:
             logger.print("Matrix value: " + str(matrix_value))
             logger.print("Success info: " + str(pipeline.success_info))
         for task in self.on_success_script:
-            task.execute(pipeline_name=pipeline.name,
+            await task.execute(pipeline_name=pipeline.name,
                          executor=self.executor,
                          matrix=matrix_value,
                          prefix=self.prefix,
@@ -156,13 +169,13 @@ class Core:
                                 "success_info": pipeline.success_info,
                                 **pipeline.pipeline_subst})
 
-    def on_failure(self, pipeline, matrix_value, exception):
+    async def on_failure(self, pipeline, matrix_value, exception):
         if self.security_options["hide_links"]:
             pipeline.success_info = sanitize_url(pipeline.success_info)
 
         error_message = str(exception)
         for task in self.on_failure_script:
-            task.execute(pipeline_name=pipeline.name,
+            await task.execute(pipeline_name=pipeline.name,
                          executor=self.executor,
                          matrix=matrix_value,
                          prefix=self.prefix,
